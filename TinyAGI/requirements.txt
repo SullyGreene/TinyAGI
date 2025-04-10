@@ -2,6 +2,7 @@ openai
 gitpython
 flask
 wikipedia
+wikipedia-api
 nltk
 python-dotenv
 llama-cpp-python
