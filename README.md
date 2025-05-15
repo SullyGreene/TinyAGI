@@ -1,4 +1,11 @@
-**Disclaimer:** This is a **preview release** (version 0.0.2). TinyAGI is currently under active development, and this version is intended for testing, feedback, and early experimentation. Expect frequent updates and potential changes to the API.
+**Disclaimer:** This is a **preview release** (version 0.0.2) of **TinyAGI**, which is currently under active development. This release is intended for **testing, feedback, and early experimentation**. Please be aware that the API is subject to change, and frequent updates are expected.
+
+#### ⚠️ THIS README IS STILL A WORK IN PROGRESS
+
+A significant portion of the code has been **moved, changed**, or is **still under development**. For now, please refer to the **examples** and **test files** for the most accurate and up-to-date usage.
+This preview release is approximately **90% complete**.
+
+---
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/SullyGreene/TinyAGI/refs/heads/main/Static/logo.png" alt="TinyAGI Logo">
@@ -203,7 +210,7 @@ Run TinyAGI tests to verify functionality.
      <summary>Show command</summary>
 
    ```bash
-   python test_ollama.py
+   python test_ollama_agent.py
    ```
 
    - **Expected Output**:
