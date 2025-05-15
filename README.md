@@ -123,7 +123,7 @@ Clone and set up dependencies:
      <summary>Show command</summary>
 
    ```bash
-   python run.py
+   python start_server.py
    ```
 
    The server will be accessible at `http://localhost:5000`.
