@@ -1,1 +1,1 @@
-# TinyAGI/cli/commands/__init__.py
+# Initializes the CLI module
