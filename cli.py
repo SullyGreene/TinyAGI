@@ -4,7 +4,7 @@
 # Repository: https://github.com/SullyGreene
 # Profile: https://x.com/@SullyGreene
 
-# start_cli_ui.py
+# cli.py
 
 import json
 import sys
