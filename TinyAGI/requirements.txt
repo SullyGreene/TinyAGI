@@ -9,3 +9,4 @@ llama-cpp-python
 ollama
 black
 rich
+prompt_toolkit
