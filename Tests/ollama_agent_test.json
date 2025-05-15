@@ -1,0 +1,43 @@
+{
+    "agents": [
+      {
+        "name": "ollama_agent",
+        "module": "ollama_agent",
+        "class": "OllamaAgent",
+        "source": "local",
+        "config": {
+          "name": "llama3.2:1b",
+          "host": "http://localhost:11434",
+          "parameters": {}
+        }
+      }
+    ],
+    "plugins": [
+      {
+        "name": "GenerateText",
+        "module": "generate_text",
+        "source": "local",
+        "config": {
+          "prompt_template": "{prompt}"
+        }
+      }
+    ],
+    "tasks": [
+      {
+        "task_id": "generate_poem",
+        "plugin": "GenerateText",
+        "agent": "ollama_agent",
+        "tool": null,
+        "input": {
+          "prompt": "Write a poem about the stars whispering secrets to the ocean."
+        },
+        "output": {
+          "save_to_file": false
+        },
+        "options": {
+          "stream": false
+        }
+      }
+    ]
+  }
+  
