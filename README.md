@@ -1,12 +1,3 @@
-**Disclaimer:** This is a **preview release** (version 0.0.2) of **TinyAGI**, which is currently under active development. This release is intended for **testing, feedback, and early experimentation**. Please be aware that the API is subject to change, and frequent updates are expected.
-
-#### ⚠️ THIS README IS STILL A WORK IN PROGRESS
-
-A significant portion of the code has been **moved, changed**, or is **still under development**. For now, please refer to the **examples** and **test files** for the most accurate and up-to-date usage.
-This preview release is approximately **90% complete**.
-
----
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/SullyGreene/TinyAGI/refs/heads/main/Static/logo.png" alt="TinyAGI Logo">
 </p>
@@ -14,9 +5,11 @@ This preview release is approximately **90% complete**.
 
 # 🧠 TinyAGI
 
-**TinyAGI** is a powerful, modular Artificial General Intelligence (AGI) framework crafted for seamless integration and management of AI agents, plugins, and tools. With its adaptable and extensible architecture, TinyAGI enables dynamic loading of components from local and GitHub-hosted sources, empowering you to customize and scale for a multitude of use cases.
+**TinyAGI** is a powerful, modular Artificial General Intelligence (AGI) framework crafted for seamless integration and management of AI agents, plugins, and tools. With its adaptable and extensible architecture, TinyAGI enables dynamic loading of components from local and GitHub-hosted sources, empowering you to customize and scale for a multitude of use cases. It's designed to be lightweight, easy to understand, and highly extensible.
 
 [![PyPI Version](https://img.shields.io/pypi/v/TinyAGI)](https://pypi.org/project/TinyAGI/) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SullyGreene/TinyAGI/blob/main/LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/SullyGreene/TinyAGI?style=social)](https://github.com/SullyGreene/TinyAGI/stargazers) [![Twitter Follow](https://img.shields.io/twitter/follow/SullyGreene?style=social)](https://twitter.com/SullyGreene)
+
+> **Disclaimer:** This is a **preview release** (version 0.0.2) of **TinyAGI**, which is currently under active development. This release is intended for **testing, feedback, and early experimentation**. Please be aware that the API is subject to change, and frequent updates are expected.
 
 ---
 
@@ -25,7 +18,7 @@ This preview release is approximately **90% complete**.
 - [🧩 Features](#-features)
 - [📦 Installation](#-installation)
 - [🔧 Setup Instructions](#-setup-instructions)
-- [🛠 Usage](#-usage)
+- [🛠️ Usage](#-usage)
 - [📚 Documentation](#-documentation)
 - [🧪 Testing](#-testing)
 - [📝 Contributing](#-contributing)
@@ -49,15 +42,17 @@ This preview release is approximately **90% complete**.
 
 ## 📦 Installation
 
-### **From PyPI**
+### From PyPI
 
-Get the latest TinyAGI in seconds with `pip`:
+Get the stable core of TinyAGI in seconds with `pip`:
+
+> **Note:** The PyPI package is currently on beta preview 0.0.2. For the latest features and updates, we recommend installing from GitHub.
 
 <details>
   <summary>Show command</summary>
 
   ```bash
-  pip install TinyAGI
+  pip install TinyAGI==0.0.2
   ```
 </details>
 
@@ -65,6 +60,7 @@ Get the latest TinyAGI in seconds with `pip`:
 
 Clone and set up dependencies:
 
+ > Recommended for latest reslease
 <details>
   <summary>Show commands</summary>
 
@@ -74,7 +70,7 @@ Clone and set up dependencies:
   python setup_env.py
   ```
 
-> **Note:** `setup_env.py` creates a `venv` environment, installs dependencies, and downloads necessary NLTK data.
+> **Note:** `setup_env.py` creates a `venv` environment `tinyagi_venv`, installs dependencies, and downloads necessary NLTK data.
 
 </details>
 
