@@ -7,69 +7,72 @@
 
 import argparse
 import sys
-import json
 import logging
 from ..agent import AgentSystem
 from ..utils import setup_logging
+from ..cli.ui import run_cli_ui
 
 logger = logging.getLogger(__name__)
 
-def main():
-    parser = argparse.ArgumentParser(description='TinyAGI CLI')
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-
-    # Generate command
-    parser_generate = subparsers.add_parser('generate', help='Generate text from a prompt')
-    parser_generate.add_argument('--prompt', '-p', required=True, help='Prompt text')
-    parser_generate.add_argument('--config', '-c', help='Path to config file')
-    parser_generate.add_argument('--stream', '-s', action='store_true', help='Stream output')
-
-    args = parser.parse_args()
-
-    if not args.command:
-        parser.print_help()
-        sys.exit(1)
-
+def handle_direct_command(args):
+    """Handles direct command execution from the command line."""
     setup_logging()
     config_file = args.config if args.config else 'config/agent_config.json'
-    agent_system = AgentSystem(config_file)
-    agent_manager = agent_system.agent_manager
-    plugin_manager = agent_system.plugin_manager
-    tool_manager = agent_system.tool_manager
+    
+    try:
+        agent_system = AgentSystem(config_files=config_file)
+    except ValueError as e:
+        logger.error(f"Failed to initialize AgentSystem: {e}")
+        sys.exit(1)
 
-    # Execute tasks defined in the configuration
     if args.command == 'generate':
         try:
-            # Find the task that matches the prompt
-            task = next((t for t in agent_system.config.get('tasks', []) if t['input'].get('prompt') == args.prompt), None)
-            if not task:
-                logger.error(f"No task found matching the prompt: {args.prompt}")
+            # Use the default agent for direct generation
+            agent = agent_system.agent_manager.get_agent(args.agent)
+            if not agent:
+                logger.error(f"Agent '{args.agent}' not found.")
                 sys.exit(1)
             
-            plugin = plugin_manager.get_plugin(task['plugin'])
-            agent = agent_manager.get_agent(task['agent'])
-            tool = tool_manager.get_tool(task['tool'])
-
-            if not plugin or not agent:
-                logger.error("Required plugin or agent not found.")
-                sys.exit(1)
-
-            input_data = task.get('input', {})
-            options = task.get('options', {})
-
-            # Override stream option if provided
+            response = agent.generate_text(args.prompt, stream=args.stream)
             if args.stream:
-                options['stream'] = True
-
-            response = plugin.execute(agent, tool, input_data, options, stream=args.stream)
-            if args.stream and response:
                 for chunk in response:
                     print(chunk, end='', flush=True)
+                print()
             else:
                 print(response)
         except Exception as e:
             logger.error(f"Error during generation: {e}")
             sys.exit(1)
+    elif args.command == 'run':
+        try:
+            agent_system.run()
+        except Exception as e:
+            logger.error(f"Error during task execution: {e}")
+            sys.exit(1)
+
+def main():
+    parser = argparse.ArgumentParser(description='TinyAGI CLI. Runs in interactive mode if no command is provided.')
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+
+    # Generate command
+    parser_generate = subparsers.add_parser('generate', help='Generate text from a prompt.')
+    parser_generate.add_argument('prompt', help='The prompt to generate text from.')
+    parser_generate.add_argument('--agent', '-a', default='ollama_agent', help='The agent to use for generation.')
+    parser_generate.add_argument('--config', '-c', help='Path to a custom config file.')
+    parser_generate.add_argument('--stream', '-s', action='store_true', help='Stream the output.')
+
+    # Run command
+    parser_run = subparsers.add_parser('run', help='Run tasks defined in the config file.')
+    parser_run.add_argument('--config', '-c', help='Path to a custom config file.')
+
+    # Parse arguments. If no command is given, sys.argv will be short.
+    if len(sys.argv) == 1:
+        # No command provided, start interactive UI
+        run_cli_ui()
+    else:
+        # Command provided, parse args and handle it
+        args = parser.parse_args()
+        handle_direct_command(args)
 
 def run_cli():
     """

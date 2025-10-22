@@ -12,6 +12,7 @@ from .modules.module_manager import ModuleManager
 from .agents.agent_manager import AgentManager
 from .tools.tool_manager import ToolManager
 from .utils import load_json, setup_logging, download_nltk_resources
+from .config_validator import validate_config
 from typing import List, Union
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,11 @@ class AgentSystem:
         setup_logging()
         download_nltk_resources()
         self.config = self.load_and_merge_configs(config_files)
+
+        # Validate the merged configuration
+        if not validate_config(self.config):
+            raise ValueError("Configuration validation failed. Please check your config file(s).")
+
         self.module_manager = ModuleManager(self.config.get('modules', []))
         self.agent_manager = AgentManager(self.config.get('agents', []), self.module_manager)
         self.plugin_manager = PluginManager(self.config.get('plugins', []))

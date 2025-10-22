@@ -20,8 +20,9 @@ class WikipediaTool(BaseTool):
         """
         super().__init__(config)
         self.language = self.config.get('language', 'en')
-        self.wiki = wikipediaapi.Wikipedia(self.language)
-        logger.info(f"WikipediaTool initialized with language: {self.language}")
+        self.user_agent = self.config.get('user_agent', 'TinyAGI/1.0')
+        self.wiki = wikipediaapi.Wikipedia(user_agent=self.user_agent, language=self.language)
+        logger.info(f"WikipediaTool initialized with language: {self.language} and user_agent: {self.user_agent}")
 
     def search(self, query, results=5):
         """

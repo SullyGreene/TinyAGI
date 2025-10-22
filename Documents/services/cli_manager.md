@@ -1,42 +1,38 @@
-
-# TinyAGI/services/cli_manager.py
+# TinyAGI CLI
 
 ## Overview
 
-The `cli_manager.py` file provides a Command-Line Interface (CLI) for interacting with the TinyAGI framework. It allows users to perform tasks such as text generation directly from the terminal.
+The TinyAGI framework includes a powerful and user-friendly Command-Line Interface (CLI) for interacting with the system. Built with `rich` and `argparse`, the CLI supports both an interactive shell and direct command execution.
 
-## Functionality
+## How to Run
 
-- **Command Parsing**: Utilizes the `argparse` library to parse command-line arguments and subcommands.
-- **Text Generation**: Provides a `generate` command to create text based on user-provided prompts.
-- **Streaming Support**: Allows users to receive streaming responses for real-time text generation.
-- **Configuration Flexibility**: Supports specifying different configuration files for the agent system.
+### Interactive Mode
 
-## Key Components
-
-- **main**: Parses CLI arguments and executes the corresponding commands.
-- **run_cli**: Entry point to run the CLI manager.
-
-## Usage
-
-Run the CLI manager to execute commands.
+To start the interactive CLI, run the following command from the root of the project:
 
 ```bash
-python -m TinyAGI.services.cli_manager generate --prompt "Hello, world!"
+poetry run cli
 ```
 
-### Available Commands
+This will launch the interactive shell, displaying a welcome message and a table of available commands.
 
-- **generate**: Generate text based on a provided prompt.
+## Available Commands
 
-    **Arguments**:
-    
-    - `--prompt` or `-p`: The prompt text for text generation.
-    - `--config` or `-c`: (Optional) Path to a different configuration file.
-    - `--stream` or `-s`: (Optional) Enable streaming of the generated text.
+The interactive CLI supports the following commands:
 
-    **Example**:
+| Command    | Description                        | 
+|------------|------------------------------------|
+| `run`      | Execute the task pipeline from config. |
+| `chat`     | Start an interactive chat session. |
+| `generate` | Generate text from a prompt.       |
+| `config`   | Display the agent configuration.   |
+| `agents`   | List all available AI agents.      |
+| `plugins`  | List all available plugins.        |
+| `tools`    | List all available tools.          |
+| `help`     | Show the command help table again. |
+| `clear`    | Clear the console screen.          |
+| `exit`     | Exit the CLI.                      |
 
-    ```bash
-    python -m TinyAGI.services.cli_manager generate --prompt "Write a short story about a dragon." --stream
-    ```
+## Structure
+
+The CLI is modular, with each command implemented in its own file within the `TinyAGI/cli/commands/` directory. The main user interface logic is handled by `TinyAGI/cli/ui.py`, which is responsible for the command prompt and displaying the rich output.

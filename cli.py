@@ -8,6 +8,9 @@
 # cli.py
 
 from TinyAGI.cli.ui import run_cli_ui
+from dotenv import load_dotenv
+
+load_dotenv()
 
 if __name__ == '__main__':
     try:

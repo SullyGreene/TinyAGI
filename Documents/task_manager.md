@@ -13,7 +13,7 @@ The `task_manager.py` file contains the `TaskManager` class, which is responsibl
 
 ## Key Components
 
-- **execute_tasks**: Main method that processes each task by invoking the relevant plugin with the specified agent and tool.
+- **execute_tasks**: Main method that processes each task by invoking the relevant plugin with the specified agent, tool, and input data.
 - **save_output**: Saves the result of a task to a file if configured to do so.
 
 ## Usage

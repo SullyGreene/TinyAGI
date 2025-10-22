@@ -1,9 +1,22 @@
-
-# TinyAGI/services/server_manager.py
+# TinyAGI Server Manager
 
 ## Overview
 
-The `server_manager.py` file sets up and runs the Flask server for the TinyAGI framework, exposing API endpoints for various functionalities such as chat, text generation, embedding, and configuration management.
+The `server_manager.py` file sets up and runs a Flask server for the TinyAGI framework. It exposes API endpoints for various functionalities such as chat, text generation, embedding, and configuration management.
+
+## How to Run
+
+The recommended way to start the server is to use the `start.py` script in the root of the project:
+
+```bash
+python start.py
+```
+
+This script uses Poetry to run the server within the correct environment. Alternatively, you can run the module directly:
+
+```bash
+python -m TinyAGI.services.server_manager
+```
 
 ## Functionality
 
@@ -13,49 +26,41 @@ The `server_manager.py` file sets up and runs the Flask server for the TinyAGI f
     - `/embed`: Generates embeddings for input data.
     - `/reload`: Reloads the model and configuration dynamically.
     - `/config`: Retrieves the current configuration.
-- **Agent Initialization**: Initializes the `AgentSystem` and retrieves the default agent based on configuration.
+- **Agent Initialization**: Initializes the `AgentSystem` and loads the agents, plugins, and tools as defined in `config/agent_config.json`.
 - **Error Handling**: Logs and returns errors encountered during API operations.
 
-## Key Components
-
-- **create_app**: Configures the Flask application, sets up routes, and initializes the agent system.
-- **run_server**: Starts the Flask server.
-
-## Usage
-
-Run the server to start handling API requests.
-
-```python
-from TinyAGI.services.server_manager import run_server
-
-if __name__ == '__main__':
-    run_server()
-```
-
-### API Usage Examples
+## API Usage Examples
 
 - **Chat Endpoint**:
 
     ```bash
-    curl -X POST http://localhost:5000/chat          -H "Content-Type: application/json"          -d '{"messages": [{"role": "user", "content": "Hello!"}], "stream": false}'
+    curl -X POST http://localhost:5000/chat \
+         -H "Content-Type: application/json" \
+         -d '{"messages": [{"role": "user", "content": "Hello!"}], "stream": false}'
     ```
 
 - **Generate Text Endpoint**:
 
     ```bash
-    curl -X POST http://localhost:5000/generate          -H "Content-Type: application/json"          -d '{"prompt": "Tell me a joke.", "stream": false}'
+    curl -X POST http://localhost:5000/generate \
+         -H "Content-Type: application/json" \
+         -d '{"prompt": "Tell me a joke.", "stream": false}'
     ```
 
 - **Embed Endpoint**:
 
     ```bash
-    curl -X POST http://localhost:5000/embed          -H "Content-Type: application/json"          -d '{"input": "Sample text for embedding."}'
+    curl -X POST http://localhost:5000/embed \
+         -H "Content-Type: application/json" \
+         -d '{"input": "Sample text for embedding."}'
     ```
 
 - **Reload Configuration Endpoint**:
 
     ```bash
-    curl -X POST http://localhost:5000/reload          -H "Content-Type: application/json"          -d '{"config_file": "config/new_config.json"}'
+    curl -X POST http://localhost:5000/reload \
+         -H "Content-Type: application/json" \
+         -d '{"config_file": "config/new_config.json"}'
     ```
 
 - **Get Configuration Endpoint**:

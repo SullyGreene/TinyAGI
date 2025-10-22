@@ -1,0 +1,34 @@
+{
+  "agents": [
+    {
+      "name": "gemini_agent",
+      "module": "gemini_agent",
+      "class": "GeminiAgent",
+      "source": "local",
+      "config": {
+        "generation_model": "gemini-2.5-flash",
+        "parameters": {}
+      }
+    }
+  ],
+  "plugins": [
+    {
+      "name": "GenerateText",
+      "module": "generate_text",
+      "source": "local",
+      "config": {}
+    }
+  ],
+  "tools": [],
+  "tasks": [
+    {
+      "task_id": "generate_story_with_gemini",
+      "plugin": "GenerateText",
+      "agent": "gemini_agent",
+      "input": {
+        "prompt": "Write a short story about a dog who discovers music."
+      }
+    }
+  ],
+  "modules": []
+}

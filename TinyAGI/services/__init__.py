@@ -7,12 +7,10 @@
 
 from .cli_manager import run_cli
 from .server_manager import run_server
-from .chat_manager import ChatManager
 
 __all__ = [
     'run_cli',
-    'run_server',
-    'ChatManager'
+    'run_server'
 ]
 
 

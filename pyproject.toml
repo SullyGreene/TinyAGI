@@ -1,6 +1,6 @@
 # [pyproject.toml]
 # This file replaces the need for setup_env.py and requirements.txt.
-# It uses the Poetry tool to manage dependencies, virtual environments,
+# It uses the Poetry tool to manage dependencies, virtual environments, and
 # and project metadata in a standardized, reproducible way.
 # To install all dependencies and set up the project, a user simply runs `poetry install`.
 
@@ -10,43 +10,48 @@ version = "0.1.0" # Updated version to reflect the major refactor
 description = "A powerful, modular Artificial General Intelligence (AGI) framework for seamless integration and management of AI agents and tools."
 authors = ["SullyGreene <your-email@example.com>"]
 license = "MIT"
-readme = "README.md"
 repository = "https://github.com/SullyGreene/TinyAGI"
-keywords = ["agi", "ai", "agent", "llm", "framework", "fastapi"]
+readme = "README.md"
+keywords = ["agi", "ai", "agent", "llm", "framework", "flask"]
 
 [tool.poetry.dependencies]
 python = "^3.9" # Specify a modern, compatible Python version
 
 # Core application framework
-fastapi = "^0.111.0"
-uvicorn = {extras = ["standard"], version = "^0.29.0"}
-pydantic = "^2.7.1"
+flask = "^3.0.0"
+pydantic = "^2.8.2"
 python-dotenv = "^1.0.1"
+jsonschema = "^4.22.0"
 
 # AI & LLM Libraries
-openai = "^1.30.1"          # For interacting with OpenAI models (GPT-4, etc.)
-anthropic = "^0.27.0"         # For interacting with Anthropic models (Claude 3)
-llama-index-core = "^0.10.45" # Core components for RAG (loading, indexing)
-chromadb = "^0.5.0"         # Local vector store for RAG memory
-typer = {extras = ["rich"], version = "^0.12.3"} # For building a modern CLI
+openai = "^1.37.0" # For interacting with OpenAI models (GPT-4, etc.)
+anthropic = "^0.30.0" # For interacting with Anthropic models (Claude 3)
+llama-index-core = "^0.10.68" # Core components for RAG (loading, indexing)
+chromadb = "^0.5.3" # Local vector store for RAG memory
+typer = {extras = ["rich"], version = "^0.12.5"} # For building a modern CLI
 
 # Utility Libraries
-requests = "^2.31.0"        # For making HTTP requests in tools
-beautifulsoup4 = "^4.12.3"  # For parsing HTML in web scraping tools
-nltk = "^3.8.1"             # Retained for text processing capabilities if needed
+requests = "^2.32.3" # For making HTTP requests in tools
+beautifulsoup4 = "^4.12.3" # For parsing HTML in web scraping tools
+nltk = "^3.8.1" # Retained for text processing capabilities if needed
+geopy = "^2.4.1"
+gitpython = "^3.1.41"
+ollama = "^0.3.0"
+llama-cpp-python = "^0.3.16"
+google-generativeai = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]
 # Development-specific dependencies
-pytest = "^8.2.1"           # The standard for testing in Python
-pytest-mock = "^3.14.0"     # For mocking API calls in tests
-black = "^24.4.2"           # The uncompromising Python code formatter
-ruff = "^0.4.4"             # An extremely fast Python linter
+pytest = "^8.2.2" # The standard for testing in Python
+pytest-mock = "^3.14.0" # For mocking API calls in tests
+black = "^24.4.2" # The uncompromising Python code formatter
+ruff = "^0.5.0" # An extremely fast Python linter
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-# You can also add scripts here to be run with `poetry run <script-name>`
 [tool.poetry.scripts]
-start = "tinyagi.main:run_server"
-cli = "tinyagi.cli:app"
+start = "TinyAGI.services.server_manager:run_server"
+cli = "TinyAGI.services.cli_manager:main"
+postinstall = "download_nltk:main"

@@ -44,7 +44,7 @@
 
 ### From PyPI
 
-Get the stable core of TinyAGI in seconds with `pip`:
+Get the core of TinyAGI in seconds with `pip`:
 
 > **Note:** The PyPI package is currently on beta preview 0.0.2. For the latest features and updates, we recommend installing from GitHub.
 
@@ -60,17 +60,17 @@ Get the stable core of TinyAGI in seconds with `pip`:
 
 Clone and set up dependencies:
 
- > Recommended for latest reslease
+ > Recommended for the latest release.
 <details>
   <summary>Show commands</summary>
 
   ```bash
   git clone https://github.com/SullyGreene/TinyAGI.git
   cd TinyAGI
-  python setup_env.py
+  poetry install
   ```
 
-> **Note:** `setup_env.py` creates a `venv` environment `tinyagi_venv`, installs dependencies, and downloads necessary NLTK data.
+> **Note:** `poetry install` creates a virtual environment, installs dependencies, and downloads necessary NLTK data.
 
 </details>
 
@@ -97,7 +97,7 @@ Clone and set up dependencies:
      <summary>Show command</summary>
 
    ```bash
-   python setup_env.py
+   poetry install
    ```
    </details>
 
@@ -119,7 +119,7 @@ Clone and set up dependencies:
      <summary>Show command</summary>
 
    ```bash
-   python start_server.py
+   poetry run start
    ```
 
    The server will be accessible at `http://localhost:5000`.
@@ -132,23 +132,22 @@ Clone and set up dependencies:
 
 ### **Using the CLI**
 
-Interact with TinyAGI through the command-line interface.
-
-- **Generate Text**
+Interact with TinyAGI through the interactive command-line interface.
 
    <details>
      <summary>Show command</summary>
 
    ```bash
-   python -m TinyAGI.services.cli_manager generate --prompt "Tell me a joke."
+   poetry run cli
    ```
 
-   - **Options:**
-       - `--prompt` or `-p`: The text prompt.
-       - `--config` or `-c`: Path to a custom configuration file.
-       - `--stream` or `-s`: Enable streaming output.
-
    </details>
+
+This will start the interactive CLI, where you can use the following commands:
+
+- `generate`: Generate text from a prompt.
+- `config`: Display current configuration.
+- `exit`: Exit the CLI.
 
 ### **Accessing the API**
 
@@ -219,6 +218,21 @@ Run TinyAGI tests to verify functionality.
    - **Troubleshooting Tips**:
       - Ensure the Ollama server is running at `http://localhost:11434`.
       - Confirm correct API keys and authentication.
+
+   </details>
+
+---
+
+## 🧪 **Testing**
+
+Run the test suite to ensure all components are working correctly. Make sure you have installed the development dependencies with `poetry install`.
+
+   <details>
+     <summary>Show command</summary>
+
+   ```sh
+   poetry run pytest
+   ```
 
    </details>
 

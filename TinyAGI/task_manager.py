@@ -25,10 +25,36 @@ class TaskManager:
         self.plugin_manager = plugin_manager
         self.tool_manager = tool_manager
         self.tasks = tasks_config
+        self.task_results = {}
+
+    def _resolve_inputs(self, data):
+        """
+        Recursively resolve placeholders in task input data.
+        Placeholders are in the format {{tasks.task_id.output}}.
+        """
+        if isinstance(data, dict):
+            return {k: self._resolve_inputs(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._resolve_inputs(i) for i in data]
+        elif isinstance(data, str) and data.startswith('{{') and data.endswith('}}'):
+            ref = data.strip('{}').strip()
+            parts = ref.split('.')
+
+            # Expecting format "tasks.task_id.output"
+            if len(parts) == 3 and parts[0] == 'tasks' and parts[2] == 'output':
+                task_id_ref = parts[1]
+                if task_id_ref in self.task_results:
+                    logger.info(f"Resolving input from previous task '{task_id_ref}'.")
+                    return self.task_results[task_id_ref]
+                else:
+                    logger.warning(f"Could not resolve reference to task '{task_id_ref}'. It may not have been executed yet.")
+                    return data  # Return placeholder if not found
+        return data
 
     def execute_tasks(self):
         """
         Iterate through all tasks defined in the configuration and execute them using the appropriate agents, plugins, and tools.
+        Supports chaining tasks by referencing outputs of previous tasks.
         """
         logger.debug(f"Available plugins: {list(self.plugin_manager.loaded_plugins.keys())}")
         logger.debug(f"Available agents: {list(self.agent_manager.loaded_agents.keys())}")
@@ -39,7 +65,7 @@ class TaskManager:
             plugin_name = task.get('plugin')
             agent_name = task.get('agent')  # Specify which agent to use
             tool_name = task.get('tool')    # Specify which tool to use (optional)
-            input_data = task.get('input', {})
+            input_data = self._resolve_inputs(task.get('input', {}))
             output_config = task.get('output', {})
             options = task.get('options', {})
 
@@ -67,56 +93,23 @@ class TaskManager:
 
             # Execute the plugin with the specified agent and tool
             try:
-                if plugin_name == "GenerateReferences":
-                    # Specific logic for GenerateReferences plugin
-                    # Fetch summary from Wikipedia
-                    query = input_data.get('query', '')
-                    summary = tool.get_page_summary(query)
-                    if not summary:
-                        logger.error(f"No summary found for query '{query}'. Skipping task '{task_id}'.")
-                        continue
+                # Generic plugin execution
+                response = plugin.execute(
+                    agent=agent,
+                    tool=tool,
+                    input_data=input_data,
+                    options=options,
+                    stream=options.get('stream', False)
+                )
+                print(f"\nTask: {task_id} - Response:\n{response}\n")
 
-                    # Prepare the prompt for generating references
-                    prompt = f"Extract references from the following summary:\n\n{summary}"
+                # Store the result for potential use in subsequent tasks
+                self.task_results[task_id] = response
 
-                    # Execute the GenerateReferences plugin
-                    plugin_config = {
-                        "text": summary
-                    }
-                    references = plugin.execute(agent, tool=None, input_data=plugin_config, options=options, stream=options.get('stream', False))
-                    print(f"\nTask: {task_id} - Generated References:")
-                    for ref in references:
-                        print(f"{ref['id']}. {ref['source']}")
+                # Save the output if configured
+                if output_config:
+                    self.save_output(response, output_config)
 
-                elif plugin_name == "GenerateText":
-                    # General logic for GenerateText plugin
-                    response = plugin.execute(agent, tool, input_data, options, stream=options.get('stream', False))
-
-                    if tool_name == "WikipediaTool":
-                        # Task: Fetch and Rewrite Summary
-                        print(f"\nTask: {task_id} - Rewritten Summary:\n")
-                        print(response)
-                        print('\n')
-                    
-                    elif not tool_name:
-                        # Task: Rewrite References
-                        print(f"\nTask: {task_id} - Rewritten References:\n")
-                        print(response)
-                        print('\n')
-                    
-                    else:
-                        # Handle other GenerateText tasks if any
-                        print(f"\nTask: {task_id} - Response:\n")
-                        print(response)
-                        print('\n')
-                
-                else:
-                    # Handle other plugins if any
-                    response = plugin.execute(agent, tool, input_data, options, stream=options.get('stream', False))
-                    print(f"\nTask: {task_id} - Response:\n")
-                    print(response)
-                    print('\n')
-                
             except Exception as e:
                 logger.error(f"Error during task '{task_id}' execution: {e}")
 
@@ -127,14 +120,17 @@ class TaskManager:
         :param data: Data to save.
         :param output_config: Dictionary containing output configuration.
         """
-        try:
-            file_path = output_config.get('file_path', 'output.json')
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
-            logger.info(f"Output saved to '{file_path}'.")
-        except Exception as e:
-            logger.error(f"Error saving output to file: {e}")
+        if output_config.get('save_to_file', False):
+            try:
+                file_path = output_config.get('file_path', 'output.json')
+                # Ensure the output directory exists
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    # Check if data is already a JSON string, otherwise dump it
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+                logger.info(f"Output saved to '{file_path}'.")
+            except Exception as e:
+                logger.error(f"Error saving output to file: {e}")
 
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy

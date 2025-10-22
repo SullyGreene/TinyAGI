@@ -5,23 +5,13 @@
 
 # TinyAGI/services/server_manager.py
 
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, g
 from ..agent import AgentSystem
 from ..utils import setup_logging
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Global variables to hold the agent system and related components
-agent_system = None
-agent = None
-config = None
-plugin_manager = None
-task_manager = None
-tool_manager = None
-
-# Default agent name (ensure this matches an agent defined in your configuration)
-default_agent_name = 'default_agent'
 
 def create_app():
     """
@@ -32,25 +22,29 @@ def create_app():
     app = Flask(__name__)
     setup_logging()
 
-    global agent_system, agent, config, plugin_manager, task_manager, tool_manager
+    # Default agent name (ensure this matches an agent defined in your configuration)
+    default_agent_name = 'ollama_agent'
 
-    # Initialize AgentSystem
-    agent_system = AgentSystem(config_file='config/agent_config.json')
-    agent_manager = agent_system.agent_manager
-    tool_manager = agent_system.tool_manager
+    def initialize_agent_system(config_files='config/agent_config.json'):
+        """Initializes the AgentSystem and attaches it to the app context."""
+        agent_system = AgentSystem(config_files=config_files)
+        agent_manager = agent_system.agent_manager
+        agent = agent_manager.get_agent(default_agent_name)
+        if not agent:
+            logger.error(f"Default agent '{default_agent_name}' not found.")
+            raise ValueError(f"Agent '{default_agent_name}' is not available.")
+        
+        app.agent_system = agent_system
+        app.agent = agent
+        app.config['AGENT_CONFIG'] = agent_system.config
+        app.plugin_manager = agent_system.plugin_manager
+        app.task_manager = agent_system.task_manager
+        app.tool_manager = agent_system.tool_manager
+        logger.info("AgentSystem initialized and attached to Flask app.")
 
-    # Get configuration from AgentSystem
-    config = agent_system.config
-
-    # Get the default agent
-    agent = agent_manager.get_agent(default_agent_name)
-    if not agent:
-        logger.error(f"Default agent '{default_agent_name}' not found.")
-        raise ValueError(f"Agent '{default_agent_name}' is not available.")
-
-    # PluginManager and TaskManager are initialized within AgentSystem
-    plugin_manager = agent_system.plugin_manager
-    task_manager = agent_system.task_manager
+    # Initial setup
+    with app.app_context():
+        initialize_agent_system()
 
     @app.route('/chat', methods=['POST'])
     def chat():
@@ -77,11 +71,11 @@ def create_app():
         try:
             if stream:
                 def generate():
-                    for chunk in agent.generate_text(prompt, stream=True):
+                    for chunk in app.agent.generate_text(prompt, stream=True):
                         yield chunk
                 return Response(generate(), mimetype='text/plain')
             else:
-                generated_text = agent.generate_text(prompt)
+                generated_text = app.agent.generate_text(prompt)
                 return jsonify({'response': generated_text})
         except Exception as e:
             logger.error(f"Error during chat: {e}")
@@ -103,11 +97,11 @@ def create_app():
         try:
             if stream:
                 def generate_stream():
-                    for chunk in agent.generate_text(prompt, stream=True):
+                    for chunk in app.agent.generate_text(prompt, stream=True):
                         yield chunk
                 return Response(generate_stream(), mimetype='text/plain')
             else:
-                generated_text = agent.generate_text(prompt)
+                generated_text = app.agent.generate_text(prompt)
                 return jsonify({'response': generated_text})
         except Exception as e:
             logger.error(f"Error during text generation: {e}")
@@ -125,7 +119,7 @@ def create_app():
             return jsonify({'error': 'Input text is required'}), 400
 
         try:
-            embeddings = agent.embed(input_data)
+            embeddings = app.agent.embed(input_data)
             return jsonify({'embedding': embeddings})
         except Exception as e:
             logger.error(f"Error during embedding: {e}")
@@ -142,27 +136,8 @@ def create_app():
             return jsonify({'error': 'Config file path is required'}), 400
 
         try:
-            global agent_system, agent, plugin_manager, task_manager, config, tool_manager
-
-            # Re-initialize AgentSystem with the new configuration file
-            agent_system = AgentSystem(config_file=config_file)
-            agent_manager = agent_system.agent_manager
-            tool_manager = agent_system.tool_manager
-
-            # Update configuration
-            config = agent_system.config
-
-            # Update the default agent
-            agent = agent_manager.get_agent(default_agent_name)
-            if not agent:
-                logger.error(f"Default agent '{default_agent_name}' not found after reload.")
-                return jsonify({'error': f"Agent '{default_agent_name}' is not available after reload."}), 400
-
-            # Update PluginManager and TaskManager
-            plugin_manager = agent_system.plugin_manager
-            task_manager = agent_system.task_manager
-
-            logger.info("Model and configuration reloaded successfully.")
+            # Re-initialize the agent system with the new config
+            initialize_agent_system(config_files=config_file)
             return jsonify({'message': 'Model reloaded successfully'}), 200
         except Exception as e:
             logger.error(f"Error during model reload: {e}")
@@ -173,7 +148,7 @@ def create_app():
         """
         Retrieve the current configuration.
         """
-        return jsonify(config), 200
+        return jsonify(app.config.get('AGENT_CONFIG', {})), 200
 
     return app
 
