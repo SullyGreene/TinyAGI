@@ -42,112 +42,92 @@
 
 ## 📦 Installation
 
-### From PyPI
+The recommended way to install TinyAGI for the latest features is by cloning the repository from GitHub.
 
-Get the core of TinyAGI in seconds with `pip`:
+### **1. Clone the Repository**
 
-> **Note:** The PyPI package is currently on beta preview 0.0.2. For the latest features and updates, we recommend installing from GitHub.
+```bash
+git clone https://github.com/SullyGreene/TinyAGI.git
+cd TinyAGI
+```
+
+### **2. Run the Installation Script**
+
+The installation script will verify your environment, install dependencies, download required NLTK data, and create a `.env` file from the example.
 
 <details>
-  <summary>Show command</summary>
+  <summary><b>For Windows</b></summary>
 
-  ```bash
-  pip install TinyAGI==0.0.2
+  Simply run the Windows batch script. It will guide you through the process.
+  ```batch
+  installation_windows.bat
   ```
 </details>
 
-### **From GitHub**
-
-Clone and set up dependencies:
-
- > Recommended for the latest release.
 <details>
-  <summary>Show commands</summary>
+  <summary><b>For macOS / Linux</b></summary>
 
+  Run the Python installation script.
   ```bash
-  git clone https://github.com/SullyGreene/TinyAGI.git
-  cd TinyAGI
-  poetry install
+  python install.py
   ```
-
-> **Note:** `poetry install` creates a virtual environment, installs dependencies, and downloads necessary NLTK data.
-
 </details>
 
----
+### **3. Configure Environment Variables**
 
-## 🔧 **Setup Instructions**
+After the installation script completes, a `.env` file will be created in the root directory. Open this file and add your API keys (e.g., for OpenAI, Gemini) to enable the corresponding agents.
 
-1. **Clone the Repository**
-
-   <details>
-     <summary>Show commands</summary>
-
-   ```bash
-   git clone https://github.com/SullyGreene/TinyAGI.git
-   cd TinyAGI
-   ```
-   </details>
-
-2. **Set Up the Virtual Environment**
-
-   Ensure Python 3.8+ is installed.
-
-   <details>
-     <summary>Show command</summary>
-
-   ```bash
-   poetry install
-   ```
-   </details>
-
-3. **Configure Environment Variables**
-
-   Copy the example `.env` file and add your API keys.
-
-   <details>
-     <summary>Show commands</summary>
-
-   ```bash
-   cp .env.example .env
-   ```
-   </details>
-
-4. **Run the Server**
-
-   <details>
-     <summary>Show command</summary>
-
-   ```bash
-   poetry run start
-   ```
-
-   The server will be accessible at `http://localhost:5000`.
-
-   </details>
+```env
+# .env
+OPENAI_API_KEY="your-key-here"
+GEMINI_API_KEY="your-key-here"
+```
 
 ---
 
 ## 🛠 **Usage**
 
-### **Using the CLI**
+### **Running the Interactive CLI**
 
-Interact with TinyAGI through the interactive command-line interface.
+<details>
+  <summary><b>For Windows</b></summary>
+  
+  ```batch
+  cli.bat
+  ```
+</details>
 
-   <details>
-     <summary>Show command</summary>
+<details>
+  <summary><b>For macOS / Linux</b></summary>
 
-   ```bash
-   poetry run cli
-   ```
-
-   </details>
+  ```bash
+  poetry run cli
+  ```
+</details>
 
 This will start the interactive CLI, where you can use the following commands:
 
 - `generate`: Generate text from a prompt.
 - `config`: Display current configuration.
 - `exit`: Exit the CLI.
+
+### **Starting the Server**
+
+<details>
+  <summary><b>For Windows</b></summary>
+  
+  ```batch
+  start_server.bat
+  ```
+</details>
+
+<details>
+  <summary><b>For macOS / Linux</b></summary>
+  
+  ```bash
+  poetry run start
+  ```
+</details>
 
 ### **Accessing the API**
 
