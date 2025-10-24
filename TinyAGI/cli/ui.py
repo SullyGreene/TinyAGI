@@ -103,35 +103,3 @@ def run_cli_ui():
     """Entry point to run the CLI UI."""
     cli_app = CLI()
     cli_app.run_loop()
-        try:
-            command = Prompt.ask(
-                Text.from_markup("[bold green] :comet: Enter a command[/bold green]"),
-                choices=["run", "chat", "generate", "config", "agents", "plugins", "tools", "help", "clear", "exit"],
-                default="generate"
-            )
-
-            if command == "run":
-                run_cmd.run(agent_system)
-            elif command == "chat":
-                chat_cmd.run(agent_system)
-            elif command == "config":
-                config_cmd.run(agent_system.config)
-            elif command == "generate":
-                generate_cmd.run(agent_system)
-            elif command == "agents":
-                agents_cmd.run(agent_system)
-            elif command == "plugins":
-                plugins_cmd.run(agent_system)
-            elif command == "tools":
-                tools_cmd.run(agent_system)
-            elif command == "help":
-                display_welcome()
-            elif command == "clear":
-                console.clear()
-            elif command == "exit":
-                exit_cmd.run()
-        except KeyboardInterrupt:
-            console.print("\n[bold red]Interrupted by user. Exiting...[/bold red]")
-            break
-        except Exception as e:
-            console.print(f"[bold red]Error: {e}[/bold red]")
