@@ -42,25 +42,24 @@
 
 ## 📦 Installation
 
-The recommended way to install TinyAGI for the latest features is by cloning the repository from GitHub.
+The recommended way to install TinyAGI is by using the installation scripts, which automate the entire process from downloading the code to setting up the environment.
 
-### **1. Clone the Repository**
+### **1. Download and Run the Installer**
 
-```bash
-git clone https://github.com/SullyGreene/TinyAGI.git
-cd TinyAGI
-```
-
-### **2. Run the Installation Script**
-
-The installation script will set up a dedicated virtual environment, install all dependencies, download required NLTK data, create a `.env` file from the example, and move the project to a fixed installation location (default `C:\TinyAGI`).
+The installation script will handle everything:
+- Check for prerequisites (Git, Python).
+- Clone the project to a fixed location (`C:\TinyAGI` on Windows).
+- Create a dedicated virtual environment.
+- Install all required dependencies.
+- Create a default `.env` file for your API keys.
 
 <details>
   <summary><b>For Windows</b></summary>
 
-  Simply run the Windows batch script. It will automatically create a local virtual environment and install all dependencies.
+  Download and run the `installation_windows.bat` script.
   ```batch
-  installation_windows.bat
+  :: Right-click and save the link to the installer, then run it from your terminal.
+  installation_windows.bat 
   ```
   The script will install TinyAGI to `C:\TinyAGI` by default. You can customize this path by creating a `config\windows_installation.ini` file in the cloned directory *before* running the script, and setting `custom_install_path=Your\Desired\Path`.
   The script will also offer to add an `agi` command alias to your system PATH for easy access to the CLI.
