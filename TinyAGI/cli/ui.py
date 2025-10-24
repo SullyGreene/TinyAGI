@@ -5,78 +5,104 @@
 
 # TinyAGI/cli/ui.py
 
+import sys
 from rich.console import Console, Group
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from TinyAGI.cli.commands import config as config_cmd
-from TinyAGI.cli.commands import generate as generate_cmd
-from TinyAGI.cli.commands import exit as exit_cmd
-from TinyAGI.cli.commands import chat as chat_cmd
-from TinyAGI.cli.commands import agents as agents_cmd
-from TinyAGI.cli.commands import run as run_cmd
-from TinyAGI.cli.commands import plugins as plugins_cmd
-from TinyAGI.cli.commands import tools as tools_cmd
 from TinyAGI.agent import AgentSystem
-import json
+from .command_manager import CommandManager
 
 console = Console()
 
-def load_server_config(path='server_config.json'):
-    try:
-        with open(path, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        console.print(f"[bold red]Error loading config: {e}[/bold red]")
-        return {}
+class CLI:
+    def __init__(self):
+        """Initializes the CLI, loading commands and the agent system."""
+        self.command_manager = CommandManager()
+        self.agent_system = self._initialize_agent_system()
 
-def display_welcome():
-    """Displays a rich, styled welcome message and command table."""
-    console.clear()
+    def _initialize_agent_system(self):
+        """Initializes the AgentSystem and handles potential errors."""
+        try:
+            console.print("[dim]Initializing AgentSystem...[/dim]")
+            agent_system = AgentSystem(config_files='config/agent_config.json')
+            console.print("[bold green]AgentSystem initialized successfully.[/bold green]")
+            return agent_system
+        except Exception as e:
+            console.print(f"[bold red]Fatal Error: Could not initialize AgentSystem: {e}[/bold red]")
+            console.print("[bold yellow]Please ensure 'config/agent_config.json' is correctly configured.[/bold yellow]")
+            sys.exit(1)
 
-    title = Text("Welcome to the TinyAGI Interactive CLI!", justify="center", style="bold green")
-    subtitle = Text("Your AI-powered command-line assistant.", justify="center", style="italic cyan")
+    def display_welcome(self):
+        """Displays a rich, styled welcome message and command table."""
+        console.clear()
 
-    command_table = Table(title="Available Commands", show_header=True, header_style="bold magenta")
-    command_table.add_column("Command", style="dim", width=12)
-    command_table.add_column("Description", style="cyan")
+        title = Text("Welcome to the TinyAGI Interactive CLI!", justify="center", style="bold green")
+        subtitle = Text("Your AI-powered command-line assistant.", justify="center", style="italic cyan")
 
-    command_table.add_row("run", ":rocket: Execute the task pipeline from config")
-    command_table.add_row("chat", ":speech_balloon: Start an interactive chat session")
-    command_table.add_row("generate", ":brain: Generate text from a prompt")
-    command_table.add_row("config", ":gear: Display current configuration")
-    command_table.add_row("agents", ":robot: List available AI agents")
-    command_table.add_row("plugins", ":electric_plug: List available plugins")
-    command_table.add_row("tools", ":hammer_and_wrench: List available tools")
-    command_table.add_row("help", ":question: Show this help message again")
-    command_table.add_row("clear", ":broom: Clear the console screen")
-    command_table.add_row("exit", ":door: Exit the CLI")
+        command_table = Table(title="Available Commands", show_header=True, header_style="bold magenta")
+        command_table.add_column("Command", style="dim", width=12)
+        command_table.add_column("Description", style="cyan")
 
-    welcome_group = Group(
-        Text.assemble(title, "\n", subtitle),
-        "\n",
-        command_table
-    )
+        # Dynamically build the help table from loaded commands
+        for name, cmd in sorted(self.command_manager.get_commands().items()):
+            command_table.add_row(name, cmd.description)
 
-    welcome_panel = Panel(
-        welcome_group,
-        border_style="green",
-        padding=(1, 2)
-    )
-    console.print(welcome_panel)
+        welcome_group = Group(
+            Text.assemble(title, "\n", subtitle),
+            "\n",
+            command_table
+        )
+
+        welcome_panel = Panel(
+            welcome_group,
+            border_style="green",
+            padding=(1, 2)
+        )
+        console.print(welcome_panel)
+
+    def run_loop(self):
+        """The main interactive loop for the CLI."""
+        if not self.agent_system:
+            return # Do not start the loop if AgentSystem failed to initialize
+
+        self.display_welcome()
+        command_names = sorted(self.command_manager.get_commands().keys())
+
+        while True:
+            try:
+                command_name = Prompt.ask(
+                    Text.from_markup("[bold green] :comet: Enter a command[/bold green]"),
+                    choices=command_names,
+                    default="generate"
+                )
+
+                if command_name == "help":
+                    self.display_welcome()
+                    continue
+                if command_name == "clear":
+                    console.clear()
+                    continue
+                if command_name == "exit":
+                    console.print("[bold yellow]Exiting... Goodbye![/bold yellow]")
+                    break
+
+                command = self.command_manager.get_command(command_name)
+                if command:
+                    # Pass the agent system to the command's execute method
+                    command.execute(self.agent_system)
+
+            except KeyboardInterrupt:
+                console.print("\n[bold red]Interrupted by user. Exiting...[/bold red]")
+                break
+            except Exception as e:
+                console.print(f"[bold red]An unexpected error occurred: {e}[/bold red]")
 
 def run_cli_ui():
-    try:
-        # Initialize AgentSystem once
-        agent_system = AgentSystem(config_files='config/agent_config.json')
-        console.print("[bold green]AgentSystem initialized successfully.[/bold green]")
-    except Exception as e:
-        console.print(f"[bold red]Fatal Error: Could not initialize AgentSystem: {e}[/bold red]")
-        return
-    display_welcome()
-
-    while True:
+    """Entry point to run the CLI UI."""
+    cli_app = CLI()
+    cli_app.run_loop()
         try:
             command = Prompt.ask(
                 Text.from_markup("[bold green] :comet: Enter a command[/bold green]"),
