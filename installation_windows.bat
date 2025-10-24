@@ -1,58 +1,110 @@
 @echo off
-SETLOCAL
+SETLOCAL ENABLEDELAYEDEXPANSION
 
 REM --- TinyAGI Windows Installation Script ---
 echo.
 echo --- Welcome to TinyAGI Windows Installation ---
-echo This script will help you set up TinyAGI on your system.
+echo This script will download and set up TinyAGI on your system.
 echo.
 
-REM 1. Check for Python
+REM --- 1. Prerequisites Check ---
+echo Checking for Git installation...
+git --version >nul 2>&1
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Git is not installed or not in your PATH.
+    echo Please install Git from https://git-scm.com/downloads and ensure it's added to your PATH.
+    GOTO EndScript
+)
+echo Git found.
+
+echo.
 echo Checking for Python installation...
 python --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo Error: Python is not installed or not in your PATH.
-    echo Please install Python 3.8+ from https://www.python.org/downloads/ and ensure it's added to your PATH during installation.
-    echo Exiting installation.
-    GOTO :EOF
+    echo Please install Python 3.9+ from https://www.python.org/downloads/ and ensure it's added to your PATH.
+    GOTO EndScript
 )
 echo Python found.
 
-REM 2. Check for Poetry
+REM --- 2. Clone Repository ---
+SET "INSTALL_PATH=C:\TinyAGI"
+SET "REPO_URL=https://github.com/SullyGreene/TinyAGI.git"
 echo.
-echo Checking for Poetry installation...
-poetry --version >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Poetry is not installed or not in your PATH.
-    echo Please install Poetry by running:
-    echo   (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-    echo Or visit: https://python-poetry.org/docs/#installation
-    echo After installing Poetry, please restart your terminal and run this script again.
-    echo Exiting installation.
-    GOTO :EOF
+echo Cloning TinyAGI into %INSTALL_PATH%...
+IF EXIST "%INSTALL_PATH%" (
+    echo Error: The directory %INSTALL_PATH% already exists.
+    echo Please remove it or back it up before running this script.
+    GOTO EndScript
 )
-echo Poetry found.
+git clone %REPO_URL% "%INSTALL_PATH%"
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to clone the repository. Please check your internet connection and Git setup.
+    GOTO EndScript
+)
+echo Repository cloned successfully.
 
-REM 3. Run the main install.py script
+REM Change to the installation directory for all subsequent operations
+CD /D "%INSTALL_PATH%"
+
+REM --- 3. Environment Setup ---
 echo.
-echo Running the main TinyAGI setup script (install.py)...
-echo This will install dependencies, download NLTK data, and set up your .env file.
+echo Creating a local virtual environment in .\.venv...
+python -m venv .venv
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to create the virtual environment.
+    GOTO EndScript
+)
+echo Virtual environment created.
 
-REM Use 'poetry run python' to ensure install.py runs within the Poetry virtual environment
+REM --- 4. Install Poetry & Dependencies ---
+echo.
+echo Installing Poetry into the virtual environment...
+.\.venv\Scripts\python.exe -m pip install poetry
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to install Poetry.
+    GOTO EndScript
+)
+echo.
+echo Installing project dependencies...
+call .\.venv\Scripts\activate.bat
+poetry install
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to install project dependencies.
+    echo Please check pyproject.toml and your network connection.
+    GOTO EndScript
+)
+
+REM --- 5. Finalize Setup ---
+echo.
+echo Finalizing setup...
 poetry run python install.py
-
 IF %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo An error occurred during the TinyAGI setup. Please review the messages above.
-) ELSE (
-    echo.
-    echo --- TinyAGI Installation Complete! ---
-    echo You can now run the CLI with: poetry run cli
-    echo Or start the server with: poetry run start
-    echo Remember to configure your .env file with necessary API keys.
+    echo Error: Finalization script failed.
+    GOTO EndScript
+)
+
+REM --- 6. Create 'agi' Alias and Add to PATH ---
+echo.
+SET /P "ADD_TO_PATH=Do you want to add '%INSTALL_PATH%' to your user PATH environment variable? (y/n): "
+IF /I "%ADD_TO_PATH%"=="y" (
+    echo Adding '%INSTALL_PATH%' to user PATH...
+    setx PATH "%PATH%;%INSTALL_PATH%"
+    IF %ERRORLEVEL% NEQ 0 (
+        echo Warning: Failed to automatically add to PATH. You may need to do this manually.
+    ) ELSE (
+        echo Successfully added to user PATH.
+        echo Please open a NEW terminal for the 'agi' command to be available.
+    )
 )
 
 echo.
-echo Press any key to exit.
+:EndScript
+echo --- TinyAGI Installation Complete! ---
+echo You can now run the CLI by navigating to '%INSTALL_PATH%' and running 'cli.bat'.
+echo If you added to PATH, open a new terminal and simply type 'agi'.
+echo Remember to configure your .env file in '%INSTALL_PATH%' with necessary API keys.
+echo.
+echo Press any key to exit...
 pause >nul
 ENDLOCAL

@@ -53,23 +53,32 @@ cd TinyAGI
 
 ### **2. Run the Installation Script**
 
-The installation script will verify your environment, install dependencies, download required NLTK data, and create a `.env` file from the example.
+The installation script will set up a dedicated virtual environment, install all dependencies, download required NLTK data, create a `.env` file from the example, and move the project to a fixed installation location (default `C:\TinyAGI`).
 
 <details>
   <summary><b>For Windows</b></summary>
 
-  Simply run the Windows batch script. It will guide you through the process.
+  Simply run the Windows batch script. It will automatically create a local virtual environment and install all dependencies.
   ```batch
   installation_windows.bat
+  ```
+  The script will install TinyAGI to `C:\TinyAGI` by default. You can customize this path by creating a `config\windows_installation.ini` file in the cloned directory *before* running the script, and setting `custom_install_path=Your\Desired\Path`.
+  The script will also offer to add an `agi` command alias to your system PATH for easy access to the CLI.
+  **Note:** Run this script from a temporary location after cloning, as it will move the project files to the designated installation directory.
+  ```
+  The script will install TinyAGI to `C:\TinyAGI` by default. You can customize this path by creating a `config\windows_installation.ini` file in the cloned directory *before* running the script, and setting `custom_install_path=Your\Desired\Path`.
+  The script will also offer to add an `agi` command alias to your system PATH for easy access to the CLI.
+  **Note:** Run this script from a temporary location after cloning, as it will move the project files to the designated installation directory.
   ```
 </details>
 
 <details>
   <summary><b>For macOS / Linux</b></summary>
 
-  Run the Python installation script.
+  Run the shell script to set up the environment and install dependencies.
   ```bash
-  python install.py
+  chmod +x installation_unix.sh
+  ./installation_unix.sh
   ```
 </details>
 
