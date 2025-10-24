@@ -12,20 +12,25 @@ import os
 logger = logging.getLogger(__name__)
 
 class TaskManager:
-    def __init__(self, agent_manager, plugin_manager, tool_manager, tasks_config):
+    def __init__(self, agent_manager, plugin_manager, tool_manager, command_executor):
         """
-        Initialize the TaskManager with the provided agent manager, plugin manager, tool manager, and tasks configuration.
+        Initialize the TaskManager with the provided agent manager, plugin_manager, tool manager, and command executor.
 
         :param agent_manager: Instance of AgentManager.
         :param plugin_manager: Instance of PluginManager.
         :param tool_manager: Instance of ToolManager.
-        :param tasks_config: List of task configurations from the JSON config.
+        :param command_executor: Instance of CommandExecutor.
         """
         self.agent_manager = agent_manager
         self.plugin_manager = plugin_manager
         self.tool_manager = tool_manager
-        self.tasks = tasks_config
+        self.command_executor = command_executor
+        self.tasks = []
         self.task_results = {}
+
+    def add_task(self, task):
+        """Adds a task to the task list."""
+        self.tasks.append(task)
 
     def _resolve_inputs(self, data):
         """
@@ -51,7 +56,7 @@ class TaskManager:
                     return data  # Return placeholder if not found
         return data
 
-    def execute_tasks(self):
+    def execute_tasks(self, tasks):
         """
         Iterate through all tasks defined in the configuration and execute them using the appropriate agents, plugins, and tools.
         Supports chaining tasks by referencing outputs of previous tasks.
@@ -60,8 +65,9 @@ class TaskManager:
         logger.debug(f"Available agents: {list(self.agent_manager.loaded_agents.keys())}")
         logger.debug(f"Available tools: {list(self.tool_manager.loaded_tools.keys())}")
 
-        for task in self.tasks:
+        for task in tasks:
             task_id = task.get('task_id')
+            command_name = task.get('command')
             plugin_name = task.get('plugin')
             agent_name = task.get('agent')  # Specify which agent to use
             tool_name = task.get('tool')    # Specify which tool to use (optional)
@@ -69,49 +75,55 @@ class TaskManager:
             output_config = task.get('output', {})
             options = task.get('options', {})
 
-            logger.info(f"Executing task: {task_id} using plugin: {plugin_name}, agent: {agent_name}, tool: {tool_name}")
+            if command_name:
+                logger.info(f"Executing command: {command_name} with args: {input_data}")
+                response = self.command_executor.execute_command(command_name, input_data)
+                print(f"\nTask: {task_id} - Response:\n{response}\n")
+                self.task_results[task_id] = response
+            elif plugin_name:
+                logger.info(f"Executing task: {task_id} using plugin: {plugin_name}, agent: {agent_name}, tool: {tool_name}")
 
-            # Validate plugin
-            if plugin_name not in self.plugin_manager.loaded_plugins:
-                logger.error(f"Plugin '{plugin_name}' not found. Skipping task '{task_id}'.")
-                continue
-            plugin = self.plugin_manager.get_plugin(plugin_name)
+                # Validate plugin
+                if plugin_name not in self.plugin_manager.loaded_plugins:
+                    logger.error(f"Plugin '{plugin_name}' not found. Skipping task '{task_id}'.")
+                    continue
+                plugin = self.plugin_manager.get_plugin(plugin_name)
 
-            # Validate agent
-            agent = self.agent_manager.get_agent(agent_name)
-            if not agent:
-                logger.error(f"Agent '{agent_name}' not found. Skipping task '{task_id}'.")
-                continue
-
-            # Validate tool if specified
-            tool = None
-            if tool_name:
-                tool = self.tool_manager.get_tool(tool_name)
-                if not tool:
-                    logger.error(f"Tool '{tool_name}' not found. Skipping task '{task_id}'.")
+                # Validate agent
+                agent = self.agent_manager.get_agent(agent_name)
+                if not agent:
+                    logger.error(f"Agent '{agent_name}' not found. Skipping task '{task_id}'.")
                     continue
 
-            # Execute the plugin with the specified agent and tool
-            try:
-                # Generic plugin execution
-                response = plugin.execute(
-                    agent=agent,
-                    tool=tool,
-                    input_data=input_data,
-                    options=options,
-                    stream=options.get('stream', False)
-                )
-                print(f"\nTask: {task_id} - Response:\n{response}\n")
+                # Validate tool if specified
+                tool = None
+                if tool_name:
+                    tool = self.tool_manager.get_tool(tool_name)
+                    if not tool:
+                        logger.error(f"Tool '{tool_name}' not found. Skipping task '{task_id}'.")
+                        continue
 
-                # Store the result for potential use in subsequent tasks
-                self.task_results[task_id] = response
+                # Execute the plugin with the specified agent and tool
+                try:
+                    # Generic plugin execution
+                    response = plugin.execute(
+                        agent=agent,
+                        tool=tool,
+                        input_data=input_data,
+                        options=options,
+                        stream=options.get('stream', False)
+                    )
+                    print(f"\nTask: {task_id} - Response:\n{response}\n")
 
-                # Save the output if configured
-                if output_config:
-                    self.save_output(response, output_config)
+                    # Store the result for potential use in subsequent tasks
+                    self.task_results[task_id] = response
 
-            except Exception as e:
-                logger.error(f"Error during task '{task_id}' execution: {e}")
+                    # Save the output if configured
+                    if output_config:
+                        self.save_output(response, output_config)
+
+                except Exception as e:
+                    logger.error(f"Error during task '{task_id}' execution: {e}")
 
     def save_output(self, data, output_config):
         """

@@ -82,6 +82,24 @@ class AgentSystem:
                 base[key] = value
         return base
 
+    def chat(self, prompt: str) -> str:
+        """
+        Chat with the default agent.
+
+        :param prompt: The prompt to send to the agent.
+        :return: The agent's response.
+        """
+        # Get the default agent
+        default_agent_name = self.config.get('default_agent')
+        if not default_agent_name:
+            raise ValueError("No default agent specified in the configuration.")
+        
+        agent = self.agent_manager.get_agent(default_agent_name)
+        if not agent:
+            raise ValueError(f"Default agent '{default_agent_name}' not found.")
+
+        return agent.chat(prompt)
+
     def run(self):
         """
         Execute all tasks assigned to this agent system.

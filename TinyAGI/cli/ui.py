@@ -7,6 +7,7 @@
 
 import sys
 from rich.console import Console, Group
+from rich.markdown import Markdown
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.table import Table
@@ -72,26 +73,34 @@ class CLI:
 
         while True:
             try:
-                command_name = Prompt.ask(
-                    Text.from_markup("[bold green] :comet: Enter a command[/bold green]"),
-                    choices=command_names,
-                    default="generate"
+                user_input = Prompt.ask(
+                    Text.from_markup("[bold green] :comet: Enter a command or chat[/bold green]")
                 )
 
-                if command_name == "help":
-                    self.display_welcome()
+                if not user_input:
                     continue
-                if command_name == "clear":
-                    console.clear()
-                    continue
-                if command_name == "exit":
-                    console.print("[bold yellow]Exiting... Goodbye![/bold yellow]")
-                    break
 
-                command = self.command_manager.get_command(command_name)
-                if command:
-                    # Pass the agent system to the command's execute method
-                    command.execute(self.agent_system)
+                command_name, *args = user_input.split()
+
+                if command_name in self.command_manager.get_commands():
+                    if command_name == "help":
+                        self.display_welcome()
+                        continue
+                    if command_name == "clear":
+                        console.clear()
+                        continue
+                    if command_name == "exit":
+                        console.print("[bold yellow]Exiting... Goodbye![/bold yellow]")
+                        break
+                    
+                    command = self.command_manager.get_command(command_name)
+                    if command:
+                        command.execute(self.agent_system, args)
+                else:
+                    # If not a command, treat it as a chat prompt
+                    response = self.agent_system.chat(user_input)
+                    console.print(Markdown(response))
+
 
             except KeyboardInterrupt:
                 console.print("\n[bold red]Interrupted by user. Exiting...[/bold red]")
