@@ -21,6 +21,7 @@ class CLI:
     def __init__(self):
         """Initializes the CLI, loading commands and the agent system."""
         self.command_manager = CommandManager()
+        self.session_config = {} # To hold session-specific settings
         self.agent_system = self._initialize_agent_system()
 
     def _initialize_agent_system(self):
@@ -28,6 +29,7 @@ class CLI:
         try:
             console.print("[dim]Initializing AgentSystem...[/dim]")
             agent_system = AgentSystem(config_files='config/agent_config.json')
+            agent_system.session_config = self.session_config # Attach session config
             console.print("[bold green]AgentSystem initialized successfully.[/bold green]")
             return agent_system
         except Exception as e:
@@ -97,8 +99,13 @@ class CLI:
                     if command:
                         command.execute(self.agent_system, args)
                 else:
+                    # Get system prompt from session_config if it exists
+                    system_prompt = getattr(self.agent_system, 'session_config', {}).get('system_prompt')
+                    chat_kwargs = {}
+                    if system_prompt:
+                        chat_kwargs['system_prompt'] = system_prompt
                     # If not a command, treat it as a chat prompt
-                    response = self.agent_system.chat(user_input)
+                    response = self.agent_system.chat(user_input, **chat_kwargs)
                     console.print(Markdown(response))
 
 
