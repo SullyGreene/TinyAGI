@@ -28,18 +28,24 @@ class GeminiAgent(BaseAgent):
         self.model = genai.GenerativeModel(self.generation_model_name)
         
         # Set up the embedding model
-        self.embedding_model_name = self.model_config.get('embedding_model', 'models/embedding-001')
+        self.embedding_model_name = self.model_config.get('embedding_model', 'gemini-embedding-001')
         logger.info(f"GeminiAgent initialized with generation model: {self.generation_model_name} and embedding model: {self.embedding_model_name}")
 
-    def generate_text(self, prompt, stream=False):
+    def generate_text(self, prompt, stream=False, system_prompt=None):
         try:
+            # The new API prefers system_instruction to be part of the model initialization
+            # or passed in a specific structure.
+            model = self.model
+            if system_prompt:
+                model = genai.GenerativeModel(self.generation_model_name, system_instruction=system_prompt)
+
             response = self.model.generate_content(
                 prompt,
                 stream=stream,
                 generation_config=genai.types.GenerationConfig(
                     candidate_count=self.parameters.get('candidate_count', 1),
                     stop_sequences=self.parameters.get('stop_sequences', None),
-                    max_output_tokens=self.parameters.get('max_output_tokens', 150),
+                    max_output_tokens=self.parameters.get('max_output_tokens', 2048),
                     temperature=self.parameters.get('temperature', 0.7),
                     top_p=self.parameters.get('top_p', None),
                     top_k=self.parameters.get('top_k', None),
@@ -47,8 +53,13 @@ class GeminiAgent(BaseAgent):
             )
             # Handle cases where the response is blocked by safety settings
             if not response.parts:
-                logger.warning(f"Gemini response was blocked. Reason: {response.prompt_feedback.block_reason}. Safety Ratings: {response.prompt_feedback.safety_ratings}")
-                return None if not stream else iter([])
+                block_reason = "Unknown"
+                safety_ratings = "Not available"
+                if hasattr(response, 'prompt_feedback'):
+                    block_reason = response.prompt_feedback.block_reason
+                    safety_ratings = response.prompt_feedback.safety_ratings
+                logger.warning(f"Gemini response was blocked. Reason: {block_reason}. Safety Ratings: {safety_ratings}")
+                return "Response was blocked due to safety settings." if not stream else iter(["Response was blocked due to safety settings."])
 
             if stream:
                 return (chunk.text for chunk in response)
