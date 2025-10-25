@@ -18,7 +18,11 @@
 - [🧩 Features](#-features)
 - [📦 Installation](#-installation)
 - [🔧 Setup Instructions](#-setup-instructions)
-- [🛠️ Usage](#-usage)
+- [🛠️ Usage](#️-usage)
+  - [Interactive CLI](#interactive-cli)
+  - [Direct Commands](#direct-commands)
+  - [API Server](#api-server)
+  - [Programmatic Usage](#programmatic-usage)
 - [📚 Documentation](#-documentation)
 - [🧪 Testing](#-testing)
 - [📝 Contributing](#-contributing)
@@ -35,6 +39,7 @@
   - 🛠 **Tool Integration**: Use tools like the Wikipedia API to enhance capabilities.
   - 🔄 **Dynamic Loading**: Load components locally or clone from GitHub repositories on the fly.
   - 🚀 **Task Automation**: Orchestrate agents, plugins, and tools to define and execute complex tasks.
+  - 🖥️ **Dual Interface**: Interact via a feature-rich interactive CLI or a RESTful API server.
   - 📑 **Comprehensive Documentation**: Easily accessible Markdown files for every component.
   - 🔥 **Robust Error Handling**: Advanced logging and error management for smooth operation.
 
@@ -43,9 +48,6 @@
 ## 📦 Installation
 
 The recommended way to install TinyAGI is by using the installation scripts, which automate the entire process from downloading the code to setting up the environment.
-
-### **1. Download and Run the Installer**
-
 The installation script will handle everything:
 - Check for prerequisites (Git, Python).
 - Clone the project to a fixed location (`C:\TinyAGI` on Windows).
@@ -53,22 +55,27 @@ The installation script will handle everything:
 - Install all required dependencies.
 - Create a default `.env` file for your API keys.
 
+### **1. Clone the Repository**
+
+First, clone the repository to your local machine:
+```bash
+git clone https://github.com/SullyGreene/TinyAGI.git
+cd TinyAGI
+```
+
+### **2. Run the Installation Script**
+
 <details>
   <summary><b>For Windows</b></summary>
 
-  Download and run the `installation_windows.bat` script.
+  Run the `install.bat` script. It will check for prerequisites (Git, Python), set up a virtual environment, install dependencies, and create a default `.env` file.
   ```batch
-  :: Right-click and save the link to the installer, then run it from your terminal.
-  installation_windows.bat 
+  install.bat
   ```
   The script will install TinyAGI to `C:\TinyAGI` by default. You can customize this path by creating a `config\windows_installation.ini` file in the cloned directory *before* running the script, and setting `custom_install_path=Your\Desired\Path`.
   The script will also offer to add an `agi` command alias to your system PATH for easy access to the CLI.
   **Note:** Run this script from a temporary location after cloning, as it will move the project files to the designated installation directory.
-  ```
-  The script will install TinyAGI to `C:\TinyAGI` by default. You can customize this path by creating a `config\windows_installation.ini` file in the cloned directory *before* running the script, and setting `custom_install_path=Your\Desired\Path`.
-  The script will also offer to add an `agi` command alias to your system PATH for easy access to the CLI.
-  **Note:** Run this script from a temporary location after cloning, as it will move the project files to the designated installation directory.
-  ```
+
 </details>
 
 <details>
@@ -76,8 +83,8 @@ The installation script will handle everything:
 
   Run the shell script to set up the environment and install dependencies.
   ```bash
-  chmod +x installation_unix.sh
-  ./installation_unix.sh
+  chmod +x install.sh
+  ./install.sh
   ```
 </details>
 
