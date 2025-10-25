@@ -39,7 +39,7 @@ class GeminiAgent(BaseAgent):
             if system_prompt:
                 model = genai.GenerativeModel(self.generation_model_name, system_instruction=system_prompt)
 
-            response = self.model.generate_content(
+            response = model.generate_content(
                 prompt,
                 stream=stream,
                 generation_config=genai.types.GenerationConfig(
