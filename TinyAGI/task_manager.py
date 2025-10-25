@@ -12,20 +12,19 @@ import os
 logger = logging.getLogger(__name__)
 
 class TaskManager:
-    def __init__(self, agent_manager, plugin_manager, tool_manager, command_executor):
+    def __init__(self, agent_manager, plugin_manager, tool_manager, tasks):
         """
         Initialize the TaskManager with the provided agent manager, plugin_manager, tool manager, and command executor.
 
         :param agent_manager: Instance of AgentManager.
         :param plugin_manager: Instance of PluginManager.
         :param tool_manager: Instance of ToolManager.
-        :param command_executor: Instance of CommandExecutor.
+        :param tasks: A list of tasks to be executed.
         """
         self.agent_manager = agent_manager
         self.plugin_manager = plugin_manager
         self.tool_manager = tool_manager
-        self.command_executor = command_executor
-        self.tasks = []
+        self.tasks = tasks
         self.task_results = {}
 
     def add_task(self, task):
@@ -56,7 +55,7 @@ class TaskManager:
                     return data  # Return placeholder if not found
         return data
 
-    def execute_tasks(self, tasks):
+    def execute_tasks(self):
         """
         Iterate through all tasks defined in the configuration and execute them using the appropriate agents, plugins, and tools.
         Supports chaining tasks by referencing outputs of previous tasks.
@@ -65,9 +64,8 @@ class TaskManager:
         logger.debug(f"Available agents: {list(self.agent_manager.loaded_agents.keys())}")
         logger.debug(f"Available tools: {list(self.tool_manager.loaded_tools.keys())}")
 
-        for task in tasks:
+        for task in self.tasks:
             task_id = task.get('task_id')
-            command_name = task.get('command')
             plugin_name = task.get('plugin')
             agent_name = task.get('agent')  # Specify which agent to use
             tool_name = task.get('tool')    # Specify which tool to use (optional)
@@ -75,12 +73,7 @@ class TaskManager:
             output_config = task.get('output', {})
             options = task.get('options', {})
 
-            if command_name:
-                logger.info(f"Executing command: {command_name} with args: {input_data}")
-                response = self.command_executor.execute_command(command_name, input_data)
-                print(f"\nTask: {task_id} - Response:\n{response}\n")
-                self.task_results[task_id] = response
-            elif plugin_name:
+            if plugin_name:
                 logger.info(f"Executing task: {task_id} using plugin: {plugin_name}, agent: {agent_name}, tool: {tool_name}")
 
                 # Validate plugin
