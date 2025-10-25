@@ -38,6 +38,8 @@ geopy = "^2.4.1"
 gitpython = "^3.1.41"
 ollama = "^0.3.0"
 llama-cpp-python = "^0.3.16"
+yfinance = "^0.2.40"
+googlesearch-python = "^1.2.4"
 google-generativeai = "^0.7.2"
 Wikipedia-API = "^0.6.0"
 
