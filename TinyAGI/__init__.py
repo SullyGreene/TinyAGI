@@ -8,7 +8,7 @@
 __version__ = '0.1.0'
 
 from .agent import AgentSystem
-from .utils import load_json
+from . import utils
 from .plugins.plugin_manager import PluginManager
 from .task_manager import TaskManager
 from .modules.module_manager import ModuleManager
@@ -21,10 +21,13 @@ __all__ = [
     'TaskManager',
     'ModuleManager',
     'ToolManager',
-    'load_json',
+    'utils',
     'core'
 ]
 
+# For convenience and backward compatibility, expose load_json directly
+from .utils import load_json
+__all__.append('load_json')
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
