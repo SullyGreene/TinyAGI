@@ -7,22 +7,17 @@ echo --- Welcome to TinyAGI Update ---
 echo This script will update your TinyAGI installation to the latest version.
 echo.
 
-SET "INSTALL_PATH=C:\TinyAGI"
-
-IF NOT EXIST "%INSTALL_PATH%" (
-    echo Error: TinyAGI installation not found at '%INSTALL_PATH%'.
-    echo Please run 'installation_windows.bat' first.
-    GOTO EndScript
-)
-
-REM Change to the installation directory
+REM --- 1. Locate Installation and Change Directory ---
+SET "INSTALL_PATH=%~dp0"
 CD /D "%INSTALL_PATH%"
-IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Failed to change directory to %INSTALL_PATH%.
+
+IF NOT EXIST ".venv" (
+    echo Error: Could not find the '.venv' directory.
+    echo Please run this script from the root of your TinyAGI installation folder.
     GOTO EndScript
 )
 
-REM --- 1. Check for Git ---
+REM --- 2. Prerequisites Check ---
 echo Checking for Git installation...
 git --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
@@ -32,8 +27,8 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 echo Git found.
 
-REM --- 2. Pull latest changes from Git ---
 echo.
+echo --- 3. Fetch Latest Version from Repository ---
 echo Pulling latest changes from the repository...
 echo Fetching latest version from the 'main' branch...
 git fetch origin main
@@ -43,17 +38,34 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo Forcing update to the latest version. This will overwrite any local changes to repository files.
+echo WARNING: The next step will overwrite any local changes to repository files (like agents, tools, or core code).
+echo Untracked files (like your .env file or custom configs) will NOT be affected.
+echo.
+SET /P "CONFIRM=Are you sure you want to proceed with the update? (y/n): "
+IF /I NOT "%CONFIRM%"=="y" (
+    echo Update cancelled by user.
+    GOTO EndScript
+)
+
+echo.
+echo Forcing update to the latest version...
 git reset --hard origin/main
 IF %ERRORLEVEL% NEQ 0 (
     echo Error: Failed to reset the repository to the latest version.
     GOTO EndScript
 )
-echo Repository has been successfully updated.
+echo Repository successfully updated to the latest version.
 
-REM --- 3. Update dependencies and run post-install setup ---
-echo.
+echo. 
+echo --- 4. Update Dependencies & Finalize ---
 echo Activating virtual environment and updating dependencies...
+
+REM Remove the lock file to force dependency re-resolution from pyproject.toml
+IF EXIST "poetry.lock" (
+    echo Removing old poetry.lock file...
+    del poetry.lock
+)
+
 call .\.venv\Scripts\activate.bat
 poetry install
 IF %ERRORLEVEL% NEQ 0 (
@@ -61,11 +73,15 @@ IF %ERRORLEVEL% NEQ 0 (
     echo Please check pyproject.toml and your network connection.
     GOTO EndScript
 )
+echo Dependencies are up to date.
+
+echo.
+echo Running post-update setup...
 poetry run python install.py
 
 :EndScript
 echo.
-echo --- TinyAGI Update Complete! ---
+echo --- TinyAGI Update Successfully Completed! ---
 echo Press any key to exit...
 pause >nul
 ENDLOCAL
