@@ -105,7 +105,7 @@ class AgentSystem:
         Execute all tasks assigned to this agent system.
         """
         logger.info("AgentSystem started.")
-        self.task_manager.execute_tasks()
+        self.task_manager.execute_tasks(self.config.get('tasks', []))
         logger.info("AgentSystem finished execution.")
 
 
