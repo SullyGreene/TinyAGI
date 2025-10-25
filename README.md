@@ -1,8 +1,3 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/SullyGreene/TinyAGI/refs/heads/main/Static/logo.png" alt="TinyAGI Logo">
-</p>
-
-
 # 🧠 TinyAGI
 
 **TinyAGI** is a powerful, modular Artificial General Intelligence (AGI) framework crafted for seamless integration and management of AI agents, plugins, and tools. With its adaptable and extensible architecture, TinyAGI enables dynamic loading of components from local and GitHub-hosted sources, empowering you to customize and scale for a multitude of use cases. It's designed to be lightweight, easy to understand, and highly extensible.
