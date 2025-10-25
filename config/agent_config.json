@@ -1,14 +1,22 @@
 {
   "agents": [
     {
+      "name": "gemma_agent",
+      "module": "gemma_agent",
+      "class": "GemmaAgent",
+      "source": "local",
+      "config": {
+        "model_card": "models/gemma-3n-e2b-it.json"
+      }
+    },
+    {
       "name": "ollama_agent",
       "module": "ollama_agent",
       "class": "OllamaAgent",
       "source": "local",
       "config": {
-        "name": "llama3.2:1b",
-        "host": "http://localhost:11434",
-        "parameters": {}
+        "model_card": "models/gemma-2b-it.json",
+        "host": "http://localhost:11434"
       }
     },
     {
@@ -70,12 +78,27 @@
   ],
   "tasks": [
     {
-      "task_id": "fetch_and_rewrite_summary",
+      "task_id": "fetch_and_rewrite_summary_with_gemma",
       "plugin": "GenerateText",
       "agent": "ollama_agent",
       "tool": "WikipediaTool",
       "input": {
         "prompt": "Artificial Intelligence"
+      },
+      "output": {
+        "save_to_file": false
+      },
+      "options": {
+        "stream": false
+      }
+    },
+    {
+      "task_id": "generate_with_gemma_api",
+      "plugin": "GenerateText",
+      "agent": "gemma_agent",
+      "tool": null,
+      "input": {
+        "prompt": "Explain the concept of 'emergence' in complex systems in a simple way."
       },
       "output": {
         "save_to_file": false

@@ -1,0 +1,10 @@
+{
+  "name": "gemma:2b-it",
+  "provider": "ollama",
+  "description": "Gemma is a family of lightweight, state-of-the-art open models from Google, built from the same research and technology used to create the Gemini models.",
+  "parameters": {
+    "temperature": 0.7,
+    "top_p": 1,
+    "top_k": 40
+  }
+}

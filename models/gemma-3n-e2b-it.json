@@ -1,0 +1,9 @@
+{
+  "name": "gemma-3n-e2b-it",
+  "provider": "gemini",
+  "description": "Google's open model built for efficient performance on everyday devices.",
+  "parameters": {
+    "temperature": 0.7,
+    "max_output_tokens": 2048
+  }
+}
