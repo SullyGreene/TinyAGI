@@ -13,6 +13,7 @@ from .plugins.plugin_manager import PluginManager
 from .task_manager import TaskManager
 from .modules.module_manager import ModuleManager
 from .tools.tool_manager import ToolManager
+from . import core
 
 __all__ = [
     'AgentSystem',
@@ -20,7 +21,8 @@ __all__ = [
     'TaskManager',
     'ModuleManager',
     'ToolManager',
-    'load_json'
+    'load_json',
+    'core'
 ]
 
 
