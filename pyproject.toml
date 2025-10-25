@@ -29,6 +29,8 @@ anthropic = "^0.30.0" # For interacting with Anthropic models (Claude 3)
 llama-index-core = "^0.10.68" # Core components for RAG (loading, indexing)
 chromadb = "^0.5.3" # Local vector store for RAG memory
 typer = {extras = ["rich"], version = "^0.12.5"} # For building a modern CLI
+transformers = "^4.38.2"
+torch = "^2.2.1"
 
 # Utility Libraries
 requests = "^2.32.3" # For making HTTP requests in tools
@@ -57,4 +59,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 start = "TinyAGI.services.server_manager:run_server"
 cli = "TinyAGI.services.cli_manager:main"
-postinstall = "download_nltk:main"
+

@@ -5,7 +5,7 @@
 
 # TinyAGI/services/server_manager.py
 
-from flask import Flask, request, jsonify, Response, g
+from flask import Flask, request, jsonify, Response, g, render_template
 from ..agent import AgentSystem
 from ..utils import setup_logging
 import logging
@@ -45,6 +45,21 @@ def create_app():
     # Initial setup
     with app.app_context():
         initialize_agent_system()
+
+    @app.route('/', methods=['GET', 'POST'])
+    def index():
+        response = None
+        if request.method == 'POST':
+            prompt = request.form['prompt']
+            agent_name = request.form['agent']
+            agent = app.agent_system.agent_manager.get_agent(agent_name)
+            if agent:
+                response = agent.generate_text(prompt)
+            else:
+                response = f"Agent '{agent_name}' not found."
+        
+        agents = list(app.agent_system.agent_manager.loaded_agents.keys())
+        return render_template('index.html', agents=agents, response=response)
 
     @app.route('/chat', methods=['POST'])
     def chat():

@@ -21,6 +21,15 @@
         "embedding_model": "models/embedding-001",
         "parameters": {}
       }
+    },
+    {
+      "name": "huggingface_agent",
+      "module": "huggingface_agent",
+      "class": "HuggingFaceAgent",
+      "source": "local",
+      "config": {
+        "model_name": "distilgpt2"
+      }
     }
   ],
   "plugins": [
