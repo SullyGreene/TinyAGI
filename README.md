@@ -93,6 +93,28 @@ GEMINI_API_KEY="your-key-here"
 
 ---
 
+## 📖 Programmatic Usage
+
+You can easily integrate `TinyAGI` into your own Python projects. The core of the framework is the `AgentSystem`, which orchestrates agents, plugins, and tools to execute tasks defined in a configuration file.
+
+Here is a basic example of how to run the agent system from a Python script:
+
+```python
+import TinyAGI as agi
+import os
+
+def main():
+    # Ensure the config path is correct relative to your script
+    config_path = os.path.join(os.path.dirname(__file__), 'config', 'agent_config.json')
+    
+    # Initialize and run the agent system
+    agent_system = agi.AgentSystem(config_files=config_path)
+    agent_system.run()
+
+if __name__ == '__main__':
+    main()
+```
+
 ## 🛠 **Usage**
 
 ### **Running the Interactive CLI**
@@ -179,7 +201,7 @@ This will start the interactive CLI, where you can use the following commands:
 
 ## 📚 **Documentation**
 
-Access comprehensive documentation in the [`Documents/`](https://github.com/SullyGreene/TinyAGI/tree/main/Documents) directory.
+Access comprehensive documentation in the `README.md` files in each directory.
 
 ---
 
@@ -331,3 +353,35 @@ TinyAGI’s vision includes scaling to meet diverse AI needs. Here’s what’s 
 </details>
 
 ---
+
+# TinyAGI/requirements.txt
+
+## Overview
+
+The `requirements.txt` file lists all Python dependencies required to run the TinyAGI framework. It ensures that all necessary packages are installed in the virtual environment.
+
+## Dependencies
+
+- **openai**: Interfaces with OpenAI's API for text generation and embeddings.
+- **gitpython**: Allows cloning of repositories from GitHub for dynamic component loading.
+- **flask**: Web framework used to create API endpoints.
+- **wikipedia**: Interfaces with the Wikipedia API to fetch summaries and perform searches.
+- **nltk**: Natural Language Toolkit for text processing tasks like tokenization and stopword removal.
+- **python-dotenv**: Loads environment variables from a `.env` file.
+- **llama-cpp-python**: Interfaces with LLaMA models for text generation.
+- **ollama**: Client for interacting with the Ollama server.
+- **black**: Python code formatter.
+- **Additional Dependencies**: Add other required packages as needed.
+
+## Installation
+
+Install all dependencies using `pip`:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Notes
+
+- **Version Pinning**: For reproducibility, consider specifying exact versions for each package.
+- **Virtual Environment**: It's recommended to install dependencies within a virtual environment to avoid conflicts.
