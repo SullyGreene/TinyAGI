@@ -35,17 +35,26 @@ echo Git found.
 REM --- 2. Pull latest changes from Git ---
 echo.
 echo Pulling latest changes from the repository...
-git pull origin main
+echo Fetching latest version from the 'main' branch...
+git fetch origin main
 IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Failed to pull latest changes. Please check your internet connection or Git configuration.
+    echo Error: Failed to fetch updates from the repository. Please check your internet connection or Git configuration.
     GOTO EndScript
 )
-echo Repository updated.
+
+echo.
+echo Forcing update to the latest version. This will overwrite any local changes to repository files.
+git reset --hard origin/main
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to reset the repository to the latest version.
+    GOTO EndScript
+)
+echo Repository has been successfully updated.
 
 REM --- 3. Update dependencies and run post-install setup ---
 echo.
 echo Activating virtual environment and updating dependencies...
-call ".\.venv\Scripts\activate.bat"
+call .\.venv\Scripts\activate.bat
 poetry install
 IF %ERRORLEVEL% NEQ 0 (
     echo Error: Failed to update project dependencies.
