@@ -1,5 +1,5 @@
-from TinyAGI.agent import AgentSystem
+import TinyAGI as agi
 
 if __name__ == '__main__':
-    agent = AgentSystem(config_files='config/ollama_agent_poem.json')
+    agent = agi.AgentSystem(config_files='config/ollama_agent_poem.json')
     agent.run()
