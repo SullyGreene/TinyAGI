@@ -1,6 +1,6 @@
 import pytest
+import TinyAGI as agi
 from unittest.mock import MagicMock, call
-from TinyAGI.task_manager import TaskManager
 
 @pytest.fixture
 def mock_managers():
@@ -23,7 +23,7 @@ def test_execute_simple_task(mock_managers, mock_config):
     mock_tool_manager.loaded_tools = {}
 
     # Initialize TaskManager with the first task
-    task_manager = TaskManager(mock_agent_manager, mock_plugin_manager, mock_tool_manager, [mock_config['tasks'][0]])
+    task_manager = agi.TaskManager(mock_agent_manager, mock_plugin_manager, mock_tool_manager, [mock_config['tasks'][0]])
     task_manager.execute_tasks()
 
     # Assertions
@@ -50,7 +50,7 @@ def test_task_chaining(mock_managers, mock_config):
 
     # Use the two chained tasks from the config
     tasks = [mock_config['tasks'][1], mock_config['tasks'][2]]
-    task_manager = TaskManager(mock_agent_manager, mock_plugin_manager, mock_tool_manager, tasks)
+    task_manager = agi.TaskManager(mock_agent_manager, mock_plugin_manager, mock_tool_manager, tasks)
     task_manager.execute_tasks()
 
     # Assertions
