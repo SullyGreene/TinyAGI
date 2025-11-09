@@ -7,10 +7,23 @@
 
 from flask import Flask, request, jsonify, Response, g, render_template
 from ..agent import AgentSystem
-from ..utils import setup_logging
+import os
 import logging
+from rich.logging import RichHandler
+from rich.console import Console
+from rich.panel import Panel
 
 logger = logging.getLogger(__name__)
+console = Console()
+
+def setup_rich_logging():
+    """Sets up logging to use RichHandler for beautiful output."""
+    logging.basicConfig(
+        level="INFO",
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True, show_path=True)]
+    )
 
 
 def create_app():
@@ -19,8 +32,14 @@ def create_app():
 
     :return: Configured Flask app
     """
-    app = Flask(__name__)
-    setup_logging()
+    # Define paths relative to the project root to find templates and static files
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    template_folder = os.path.join(project_root, 'templates')
+    static_folder = os.path.join(project_root, 'static')
+
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+
+    setup_rich_logging()
 
     def initialize_agent_system(config_files='config/agent_config.json'):
         """Initializes the AgentSystem and attaches it to the app context."""
@@ -186,7 +205,14 @@ def run_server():
     Run the Flask server.
     """
     app = create_app()
-    app.run(debug=True)
+    
+    welcome_panel = Panel(
+        "[bold green]TinyAGI Server is running![/bold green]\n\n"
+        "Access the web UI at: [bold cyan]http://localhost:5000[/bold cyan]",
+        title="[bold]🚀 Server Online[/bold]", border_style="blue"
+    )
+    console.print(welcome_panel)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
