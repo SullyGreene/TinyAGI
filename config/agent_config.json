@@ -86,6 +86,24 @@
       "config": {
         "model": "imagen-4.0-generate-001"
       }
+    },
+    {
+      "name": "veo_agent",
+      "module": "veo_agent",
+      "class": "VeoAgent",
+      "source": "local",
+      "config": {
+        "model": "veo-3.1-generate-preview"
+      }
+    },
+    {
+      "name": "lyria_agent",
+      "module": "lyria_agent",
+      "class": "LyriaAgent",
+      "source": "local",
+      "config": {
+        "model": "models/lyria-realtime-exp"
+      }
     }
   ],
   "plugins": [

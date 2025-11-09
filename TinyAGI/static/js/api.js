@@ -97,6 +97,36 @@ export async function generateImages(agent, prompt, settings) {
     return await response.json();
 }
 
+/**
+ * Starts a video generation job on the server.
+ * @param {string} agent - The name of the video generation agent.
+ * @param {string} prompt - The text prompt for the video.
+ * @param {object} settings - Video generation settings.
+ * @returns {Promise<object>} A promise that resolves to the server's response with an operation_name.
+ */
+export async function startVideoGeneration(agent, prompt, settings) {
+    const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent, prompt, settings }),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+/**
+ * Polls the status of a video generation operation.
+ * @param {string} operationName - The name of the operation to poll.
+ * @returns {Promise<object>} A promise that resolves to the operation's status.
+ */
+export async function pollVideoOperation(operationName) {
+    const response = await fetch(`/api/video-operations/${operationName}`);
+    // No need to check for response.ok here, as we want to handle all statuses in the caller
+    return await response.json();
+}
 
 /**
  * Sends a chat request to the server and returns a readable stream for the response.

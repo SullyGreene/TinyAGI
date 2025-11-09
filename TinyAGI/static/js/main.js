@@ -1,5 +1,5 @@
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages } from './api.js';
+import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages, startVideoGeneration, pollVideoOperation } from './api.js';
 import {
     populateModeSelector,
     populateAgentSelector,
@@ -14,6 +14,8 @@ import {
     toggleSettingsModal,
     toggleEditAgentModal,
     toggleCreateAgentModal,
+    toggleMusicStudioModal,
+    toggleVideoStudioModal,
     toggleImageStudioModal,
     populateEditAgentForm,
     toggleAgentModal,
@@ -24,6 +26,10 @@ import {
     setSystemPrompt,
     populateImageAgentSelector,
     displayGeneratedImages,
+    populateVideoAgentSelector,
+    updateMusicStatus,
+    displayVideoResult,
+    showVideoGenerationSpinner,
     showImageGenerationSpinner,
     toggleTheme,
     applyTheme
@@ -46,6 +52,8 @@ const closeAgentModalButton = document.querySelector('#agent-modal .close-button
 const closeModalButton = document.querySelector('.modal .close-button');
 const closeCreateAgentModalButton = document.querySelector('#create-agent-modal .close-button');
 const closeImageStudioModalButton = document.querySelector('#image-studio-modal .close-button');
+const closeMusicStudioModalButton = document.querySelector('#music-studio-modal .close-button');
+const closeVideoStudioModalButton = document.querySelector('#video-studio-modal .close-button');
 const saveAgentButton = document.getElementById('save-agent-button');
 const themeToggleButton = document.getElementById('theme-toggle-button');
 const createAgentTypeSelect = document.getElementById('create-agent-type');
@@ -60,6 +68,19 @@ const imageAgentSelect = document.getElementById('image-agent-select');
 const imagePrompt = document.getElementById('image-prompt');
 const imageCountSlider = document.getElementById('image-count-slider');
 const imageAspectRatioSelect = document.getElementById('image-aspect-ratio');
+
+const videoStudioButton = document.getElementById('video-studio-button');
+const generateVideoButton = document.getElementById('generate-video-button');
+const videoAgentSelect = document.getElementById('video-agent-select');
+const videoPrompt = document.getElementById('video-prompt');
+const videoDurationSelect = document.getElementById('video-duration-select');
+
+const musicStudioButton = document.getElementById('music-studio-button');
+const startMusicButton = document.getElementById('start-music-button');
+const steerMusicButton = document.getElementById('steer-music-button');
+const stopMusicButton = document.getElementById('stop-music-button');
+const musicPromptInput = document.getElementById('music-prompt');
+const musicSteerPromptInput = document.getElementById('music-steer-prompt');
 const systemPromptTextarea = document.getElementById('system-prompt');
 
 const SETTINGS_KEY = 'tinyagi_chat_settings';
@@ -67,6 +88,11 @@ const SETTINGS_KEY = 'tinyagi_chat_settings';
 let messages = [];
 let agentsList = []; // To store the list of agents
 let abortController = null; // To cancel fetch requests
+
+let musicSocket = null;
+let audioContext = null;
+let audioQueue = [];
+let isPlayingMusic = false;
 let settings = {
     temperature: 1.0,
     max_tokens: 4096,
@@ -384,6 +410,120 @@ async function handleGenerateImages() {
     }
 }
 
+// --- Video Generation ---
+
+async function handleGenerateVideo() {
+    const agent = videoAgentSelect.value;
+    const prompt = videoPrompt.value.trim();
+    const settings = {
+        duration_seconds: videoDurationSelect.value
+    };
+
+    if (!prompt) {
+        alert('Please enter a prompt for the video.');
+        return;
+    }
+
+    const resultContainer = document.getElementById('video-result-container');
+    showVideoGenerationSpinner(resultContainer);
+    generateVideoButton.disabled = true;
+
+    try {
+        const startResponse = await startVideoGeneration(agent, prompt, settings);
+        const operationName = startResponse.operation_name;
+
+        // Start polling
+        const pollInterval = setInterval(async () => {
+            const statusResponse = await pollVideoOperation(operationName);
+            if (statusResponse.status === 'complete') {
+                clearInterval(pollInterval);
+                displayVideoResult(resultContainer, statusResponse.url);
+                generateVideoButton.disabled = false;
+            } else if (statusResponse.status === 'failed') {
+                clearInterval(pollInterval);
+                alert(`Video generation failed: ${statusResponse.error}`);
+                resultContainer.innerHTML = `<p style="color: var(--accent-danger);">Video generation failed.</p>`;
+                generateVideoButton.disabled = false;
+            }
+            // If status is 'processing', do nothing and wait for the next poll.
+        }, 10000); // Poll every 10 seconds
+    } catch (error) {
+        alert(`Error starting video generation: ${error.message}`);
+        resultContainer.innerHTML = `<p style="color: var(--accent-danger);">Could not start video generation.</p>`;
+        generateVideoButton.disabled = false;
+    }
+}
+
+// --- Music Generation ---
+
+function setupMusicSocket() {
+    if (musicSocket) return;
+
+    musicSocket = io('/music');
+
+    musicSocket.on('connect', () => {
+        console.log('Connected to music server.');
+    });
+
+    musicSocket.on('stream_started', () => {
+        updateMusicStatus('Streaming...');
+        startMusicButton.disabled = true;
+        steerMusicButton.disabled = false;
+        stopMusicButton.disabled = false;
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+        }
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        isPlayingMusic = true;
+        playAudioQueue();
+    });
+
+    musicSocket.on('audio_chunk', (chunk) => {
+        // The chunk is ArrayBuffer-like, convert it to a Float32Array
+        const int16Array = new Int16Array(chunk);
+        const float32Array = new Float32Array(int16Array.length);
+        for (let i = 0; i < int16Array.length; i++) {
+            float32Array[i] = int16Array[i] / 32768.0; // Convert 16-bit PCM to float
+        }
+        audioQueue.push(float32Array);
+    });
+
+    musicSocket.on('stream_error', (data) => {
+        updateMusicStatus(`Error: ${data.error}`, true);
+        stopMusicStream();
+    });
+}
+
+function playAudioQueue() {
+    if (!isPlayingMusic || audioQueue.length === 0) return;
+
+    const audioData = audioQueue.shift();
+    const audioBuffer = audioContext.createBuffer(2, audioData.length / 2, audioContext.sampleRate);
+    audioBuffer.copyToChannel(audioData.filter((_, i) => i % 2 === 0), 0); // Left channel
+    audioBuffer.copyToChannel(audioData.filter((_, i) => i % 2 !== 0), 1); // Right channel
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start();
+    source.onended = playAudioQueue; // Play next chunk when this one finishes
+}
+
+function stopMusicStream() {
+    if (musicSocket) {
+        musicSocket.disconnect();
+        musicSocket = null;
+    }
+    isPlayingMusic = false;
+    audioQueue = [];
+    updateMusicStatus('Ready to generate music.');
+    startMusicButton.disabled = false;
+    steerMusicButton.disabled = true;
+    stopMusicButton.disabled = true;
+}
+
 function loadSettings() {
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
     if (savedSettings) {
@@ -453,6 +593,15 @@ function initialize() {
         populateImageAgentSelector(imageAgents);
         toggleImageStudioModal(true);
     });
+    musicStudioButton.addEventListener('click', () => {
+        updateMusicStatus('Ready to generate music.');
+        toggleMusicStudioModal(true);
+    });
+    videoStudioButton.addEventListener('click', () => {
+        const videoAgents = agentsList.filter(name => name.includes('veo'));
+        populateVideoAgentSelector(videoAgents);
+        toggleVideoStudioModal(true);
+    });
     closeCreateAgentModalButton.addEventListener('click', () => toggleCreateAgentModal(false));
     saveSettingsButton.addEventListener('click', handleSaveSettings);
     temperatureSlider.addEventListener('input', updateTemperatureDisplay);
@@ -481,6 +630,22 @@ function initialize() {
     // Image Studio Listeners
     generateImageButton.addEventListener('click', handleGenerateImages);
     closeImageStudioModalButton.addEventListener('click', () => toggleImageStudioModal(false));
+
+    // Video Studio Listeners
+    generateVideoButton.addEventListener('click', handleGenerateVideo);
+    closeVideoStudioModalButton.addEventListener('click', () => toggleVideoStudioModal(false));
+
+    // Music Studio Listeners
+    closeMusicStudioModalButton.addEventListener('click', () => {
+        stopMusicStream();
+        toggleMusicStudioModal(false);
+    });
+    startMusicButton.addEventListener('click', () => {
+        setupMusicSocket();
+        musicSocket.emit('start_music_stream', { prompt: musicPromptInput.value });
+    });
+    steerMusicButton.addEventListener('click', () => musicSocket.emit('steer_music', { prompt: musicSteerPromptInput.value }));
+    stopMusicButton.addEventListener('click', stopMusicStream);
     imageCountSlider.addEventListener('input', () => document.getElementById('image-count-value').textContent = imageCountSlider.value);
 
     loadAgents();

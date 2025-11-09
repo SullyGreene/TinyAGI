@@ -4,8 +4,12 @@
 # Profile: https://x.com/@SullyGreene
 
 # TinyAGI/services/server_manager.py
+import time
+import uuid
 
-from flask import Flask, request, jsonify, Response, g, render_template
+from flask import Flask, request, jsonify, Response, render_template
+from flask_socketio import SocketIO, emit
+import asyncio
 from ..agent import AgentSystem
 import os
 import logging
@@ -16,6 +20,10 @@ import json
 
 logger = logging.getLogger(__name__)
 console = Console()
+
+# Dictionary to hold background tasks for music generation
+music_sessions = {}
+
 
 def setup_rich_logging():
     """Sets up logging to use RichHandler for beautiful output."""
@@ -39,6 +47,7 @@ def create_app():
     static_folder = os.path.join(project_root, 'static') # This should point to TinyAGI/static
 
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+    socketio = SocketIO(app, async_mode='threading')
 
     setup_rich_logging()
 
@@ -306,6 +315,74 @@ def create_app():
             logger.error(f"Error during image generation: {e}", exc_info=True)
             return jsonify({'error': str(e)}), 500
 
+    @app.route('/api/generate-video', methods=['POST'])
+    def start_video_generation():
+        """
+        Starts an asynchronous video generation job.
+        """
+        data = request.get_json()
+        prompt = data.get('prompt')
+        agent_name = data.get('agent', 'veo_agent')
+        settings = data.get('settings', {})
+
+        if not prompt:
+            return jsonify({'error': 'Prompt is required'}), 400
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent or not hasattr(agent, 'generate_video'):
+            return jsonify({'error': f"Video generation agent '{agent_name}' not found or is invalid."}), 404
+
+        try:
+            operation = agent.generate_video(prompt, **settings)
+            return jsonify({'operation_name': operation.name}), 202  # 202 Accepted
+        except Exception as e:
+            logger.error(f"Error starting video generation: {e}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/video-operations/<string:operation_name>', methods=['GET'])
+    def get_video_operation_status(operation_name):
+        """
+        Polls the status of a video generation operation.
+        """
+        try:
+            # The genai library needs to be configured in this context if it's not already
+            if not genai.operations:
+                api_key = os.getenv('GEMINI_API_KEY')
+                if not api_key:
+                    raise ValueError("GEMINI_API_KEY not set for polling.")
+                genai.configure(api_key=api_key)
+
+            operation = genai.operations.get(name=operation_name)
+
+            if not operation.done:
+                return jsonify({'status': 'processing'})
+
+            if operation.error:
+                logger.error(f"Video generation failed for operation {operation_name}: {operation.error.message}")
+                return jsonify({'status': 'failed', 'error': operation.error.message}), 500
+
+            # Video is ready, download and serve it
+            generated_video = operation.response.generated_videos[0]
+            
+            # Ensure the directory exists
+            video_dir = os.path.join(app.static_folder, 'generated_videos')
+            os.makedirs(video_dir, exist_ok=True)
+
+            # Generate a unique filename
+            video_filename = f"{uuid.uuid4()}.mp4"
+            video_path = os.path.join(video_dir, video_filename)
+            
+            # The SDK's download method saves the file
+            generated_video.video.save(video_path)
+            logger.info(f"Saved generated video to {video_path}")
+
+            video_url = f"/static/generated_videos/{video_filename}"
+            return jsonify({'status': 'complete', 'url': video_url})
+
+        except Exception as e:
+            logger.error(f"Error polling video operation {operation_name}: {e}", exc_info=True)
+            return jsonify({'status': 'failed', 'error': str(e)}), 500
+
     @app.route('/embed', methods=['POST'])
     def embed():
         """
@@ -333,6 +410,73 @@ def create_app():
             logger.error(f"Error during embedding: {e}")
             return jsonify({'error': str(e)}), 500
 
+    # --- Music Generation Socket.IO Handlers ---
+
+    @socketio.on('connect', namespace='/music')
+    def music_connect():
+        logger.info(f"Client connected to music namespace: {request.sid}")
+
+    @socketio.on('disconnect', namespace='/music')
+    def music_disconnect():
+        logger.info(f"Client disconnected from music namespace: {request.sid}")
+        # Clean up the associated music session if it exists
+        if request.sid in music_sessions:
+            task = music_sessions.pop(request.sid)
+            task.cancel()
+            logger.info(f"Cancelled and removed music session for {request.sid}")
+
+    @socketio.on('start_music_stream', namespace='/music')
+    def start_music_stream(data):
+        """Starts a music generation stream in a background thread."""
+        sid = request.sid
+        prompt = data.get('prompt', 'ambient electronic')
+        agent = app.agent_system.agent_manager.get_agent('lyria_agent')
+
+        if not agent:
+            emit('stream_error', {'error': 'Lyria agent not found.'})
+            return
+
+        # Define the async task to be run
+        async def music_task():
+            q = asyncio.Queue()
+            lyria_task = asyncio.create_task(agent.connect_and_stream(q, prompt))
+            
+            # The first item from the queue is the session object
+            session = await q.get()
+            if isinstance(session, Exception):
+                emit('stream_error', {'error': str(session)})
+                return
+            
+            music_sessions[sid] = {'session': session, 'task': lyria_task}
+            emit('stream_started')
+
+            while True:
+                item = await q.get()
+                if isinstance(item, bytes): # It's audio data
+                    emit('audio_chunk', item)
+                elif isinstance(item, Exception): # An error occurred
+                    emit('stream_error', {'error': str(item)})
+                    break
+                elif item is None: # Stream finished
+                    break
+        
+        # Run the async task in a new thread
+        socketio.start_background_task(asyncio.run, music_task())
+
+    @socketio.on('steer_music', namespace='/music')
+    def steer_music(data):
+        sid = request.sid
+        if sid in music_sessions:
+            new_prompt = data.get('prompt')
+            if new_prompt:
+                async def do_steer():
+                    session = music_sessions[sid]['session']
+                    await session.set_weighted_prompts(
+                        prompts=[types.WeightedPrompt(text=new_prompt, weight=1.0)]
+                    )
+                    logger.info(f"Steering music for {sid} with prompt: {new_prompt}")
+                asyncio.run(do_steer())
+
     @app.route('/reload', methods=['POST'])
     def reload_model():
         """
@@ -358,13 +502,13 @@ def create_app():
         """
         return jsonify(app.config.get('AGENT_CONFIG', {})), 200
 
-    return app
+    return app, socketio
 
 def run_server():
     """
     Run the Flask server.
     """
-    app = create_app()
+    app, socketio = create_app()
     
     welcome_panel = Panel(
         "[bold green]TinyAGI Server is running![/bold green]\n\n"
@@ -372,7 +516,7 @@ def run_server():
         title="[bold]🚀 Server Online[/bold]", border_style="blue"
     )
     console.print(welcome_panel)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
 
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy

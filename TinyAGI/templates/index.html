@@ -29,6 +29,12 @@
                 <button id="image-studio-button" class="icon-button" title="Image Studio">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                 </button>
+                <button id="video-studio-button" class="icon-button" title="Video Studio">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+                </button>
+                <button id="music-studio-button" class="icon-button" title="Music Studio">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                </button>
                 <button id="theme-toggle-button" class="icon-button" title="Toggle Theme">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.64 5.64c-.39-.39-1.02-.39-1.41 0-.39.39-.39 1.02 0 1.41l1.06 1.06c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41L5.64 5.64zm12.72 12.72c-.39-.39-1.02-.39-1.41 0-.39.39-.39 1.02 0 1.41l1.06 1.06c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41l-1.06-1.06zM5.64 18.36c.39.39.39 1.02 0 1.41-.39.39-1.02.39-1.41 0l-1.06-1.06c-.39-.39-.39-1.02 0-1.41s1.02-.39 1.41 0l1.06 1.06zm12.72-12.72c.39.39.39 1.02 0 1.41-.39.39-1.02.39-1.41 0l-1.06-1.06c-.39-.39-.39-1.02 0-1.41s1.02-.39 1.41 0l1.06 1.06z"/></svg>
                 </button>
@@ -211,8 +217,65 @@
         </div>
     </div>
 
+    <div id="video-studio-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Video Studio</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting">
+                    <label for="video-agent-select">Video Agent</label>
+                    <select id="video-agent-select"></select>
+                </div>
+                <div class="setting">
+                    <label for="video-prompt">Prompt</label>
+                    <textarea id="video-prompt" rows="6" placeholder="A cinematic shot of a majestic lion in the savannah..."></textarea>
+                </div>
+                <div class="setting">
+                    <label for="video-duration-select">Duration (seconds)</label>
+                    <select id="video-duration-select">
+                        <option value="4">4</option>
+                        <option value="6">6</option>
+                        <option value="8" selected>8</option>
+                    </select>
+                </div>
+                <button id="generate-video-button" class="button-primary">Generate Video</button>
+                <div id="video-result-container" style="margin-top: 1rem; width: 100%;">
+                    <!-- Video will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="music-studio-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Music Studio</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="music-status" style="text-align: center; color: var(--text-secondary);">Ready to generate music.</div>
+                <div class="setting">
+                    <label for="music-prompt">Initial Prompt</label>
+                    <input type="text" id="music-prompt" placeholder="e.g., minimal techno, 90 bpm">
+                </div>
+                <div class="setting">
+                    <label for="music-steer-prompt">Steer Prompt</label>
+                    <input type="text" id="music-steer-prompt" placeholder="e.g., add a funky bassline">
+                </div>
+                <div class="modal-footer" style="padding: 0; border: none; justify-content: space-between;">
+                    <button id="start-music-button" class="button-primary">Start</button>
+                    <button id="steer-music-button" class="button-secondary" disabled>Steer</button>
+                    <button id="stop-music-button" class="button-danger" disabled>Stop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/ui.js') }}"></script>
 </body>

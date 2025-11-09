@@ -8,6 +8,8 @@ const agentModal = document.getElementById('agent-modal');
 const editAgentModal = document.getElementById('edit-agent-modal');
 const createAgentModal = document.getElementById('create-agent-modal');
 const imageStudioModal = document.getElementById('image-studio-modal');
+const musicStudioModal = document.getElementById('music-studio-modal');
+const videoStudioModal = document.getElementById('video-studio-modal');
 const temperatureSlider = document.getElementById('temperature-slider');
 const temperatureValue = document.getElementById('temperature-value');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
@@ -322,6 +324,25 @@ export function toggleImageStudioModal(show) {
 }
 
 /**
+ * Opens or closes the music studio modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleMusicStudioModal(show) {
+    if (musicStudioModal) {
+        musicStudioModal.style.display = show ? 'flex' : 'none';
+    }
+}
+/**
+ * Opens or closes the video studio modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleVideoStudioModal(show) {
+    if (videoStudioModal) {
+        videoStudioModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
  * Populates the image agent selection dropdown.
  * @param {string[]} agentNames - An array of image-capable agent names.
  */
@@ -367,6 +388,65 @@ export function displayGeneratedImages(panel, imagesBase64) {
         img.style.borderRadius = '8px';
         panel.appendChild(img);
     });
+}
+
+/**
+ * Populates the video agent selection dropdown.
+ * @param {string[]} agentNames - An array of video-capable agent names.
+ */
+export function populateVideoAgentSelector(agentNames) {
+    const videoAgentSelect = document.getElementById('video-agent-select');
+    if (!videoAgentSelect) return;
+
+    videoAgentSelect.innerHTML = '';
+    if (agentNames.length === 0) {
+        videoAgentSelect.innerHTML = '<option>No video agents found</option>';
+        videoAgentSelect.disabled = true;
+    } else {
+        agentNames.forEach(agentName => {
+            const option = document.createElement('option');
+            option.value = agentName;
+            option.textContent = agentName;
+            videoAgentSelect.appendChild(option);
+        });
+        videoAgentSelect.disabled = false;
+    }
+}
+
+/**
+ * Displays a spinner in the video result container.
+ * @param {HTMLElement} container - The container to display the spinner in.
+ */
+export function showVideoGenerationSpinner(container) {
+    container.innerHTML = `<div style="text-align: center; padding: 2rem;">
+        <div class="typing-indicator" style="margin: auto;"><span></span><span></span><span></span></div>
+        <p style="margin-top: 1rem; color: var(--text-secondary);">Generating video... This may take several minutes.</p>
+    </div>`;
+}
+
+/**
+ * Displays the generated video in the result container.
+ * @param {HTMLElement} container - The container to display the video in.
+ * @param {string} videoUrl - The URL of the generated video.
+ */
+export function displayVideoResult(container, videoUrl) {
+    container.innerHTML = `<video controls autoplay loop style="width: 100%; border-radius: 8px;">
+        <source src="${videoUrl}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>`;
+}
+
+/**
+ * Updates the status message in the music studio.
+ * @param {string} text - The message to display.
+ * @param {boolean} isError - Whether the message is an error.
+ */
+export function updateMusicStatus(text, isError = false) {
+    const statusEl = document.getElementById('music-status');
+    if (statusEl) {
+        statusEl.textContent = text;
+        statusEl.style.color = isError ? 'var(--accent-danger)' : 'var(--text-secondary)';
+    }
 }
 
 /**
