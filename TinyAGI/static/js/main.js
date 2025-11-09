@@ -37,7 +37,7 @@ import {
     showVideoGenerationSpinner,
     showImageGenerationSpinner,
     toggleTheme,
-    applyTheme
+    applyTheme,
     toggleSidebar,
     applySidebarState
 } from './ui.js';
