@@ -1,0 +1,56 @@
+/* TinyAGI Web UI - Studio View Styles */
+
+.studio-view {
+    display: none; /* Hidden by default */
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    animation: fadeIn var(--transition-med) ease-in-out;
+}
+
+.studio-view.active {
+    display: flex;
+}
+
+/* Special case for chat view to keep the input area at the bottom */
+#chat-view {
+    display: none; /* Overridden by .active */
+}
+#chat-view.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.studio-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.studio-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.studio-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.studio-content-split {
+    display: flex;
+    gap: 2rem;
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.studio-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}

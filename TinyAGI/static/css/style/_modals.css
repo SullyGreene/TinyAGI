@@ -1,8 +1,8 @@
 /* TinyAGI Web UI - Modal Styles */
 
 /* Import studio-specific modal styles */
-@import url('_image_studio.css');
-@import url('_robotics_studio.css');
+/* @import url('_image_studio.css'); */ /* No longer needed as separate files */
+@import url('_studios.css');
 
 .modal {
     display: none;
@@ -112,48 +112,4 @@
 .agent-item .button-danger {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
-}
-
-/* --- Studio & Other Modal Specifics --- */
-
-#video-studio-modal .modal-content,
-#document-qa-modal .modal-content {
-    max-width: 700px;
-}
-
-#music-studio-modal .modal-content {
-    max-width: 500px;
-}
-
-#music-studio-modal .modal-footer {
-    justify-content: space-between;
-}
-
-#video-result-container {
-    margin-top: 1rem;
-    width: 100%;
-}
-
-.status-bar {
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 0.75rem;
-    background-color: var(--bg-primary);
-    border-radius: var(--border-radius);
-    font-size: 0.9rem;
-}
-
-.answer-container {
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: var(--bg-primary);
-    border-radius: var(--border-radius);
-    min-height: 50px;
-    border: 1px solid var(--border-color);
-}
-
-hr {
-    border: none;
-    border-top: 1px solid var(--border-color);
-    margin: 1.5rem 0;
 }

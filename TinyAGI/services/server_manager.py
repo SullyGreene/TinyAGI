@@ -109,6 +109,15 @@ def create_app():
         provider = request.args.get('provider')
         return jsonify(models.get(provider, [])) if provider else jsonify(models)
 
+    @app.route('/api/tools', methods=['GET'])
+    def get_tools():
+        """Endpoint to get the list of available tools."""
+        if not app.tool_manager:
+            return jsonify({'error': 'ToolManager not initialized'}), 500
+        
+        tools = list(app.tool_manager.tools.keys())
+        return jsonify(tools)
+
     @app.route('/api/agents', methods=['POST'])
     def create_agent():
         """Endpoint to create a new agent."""

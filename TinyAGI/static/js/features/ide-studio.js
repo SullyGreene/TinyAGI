@@ -68,12 +68,20 @@ async function handleIDEGenerate() {
 }
 
 export function initializeIDEStudio() {
-    ideStudioButton.addEventListener('click', () => {
-        ideOutputCode.className = `language-${ideLanguageSelect.value} hljs`;
-        toggleModal('ide-studio-modal', true)
-    });
-    ideGenerateButton.addEventListener('click', handleIDEGenerate);
-    ideLanguageSelect.addEventListener('change', () => {
-        ideOutputCode.className = `language-${ideLanguageSelect.value}`;
-    });
+    if (ideStudioButton) {
+        ideStudioButton.addEventListener('click', () => {
+            if (ideOutputCode && ideLanguageSelect) {
+                ideOutputCode.className = `language-${ideLanguageSelect.value} hljs`;
+            }
+            toggleModal('ide-studio-modal', true)
+        });
+    }
+    if (ideGenerateButton) {
+        ideGenerateButton.addEventListener('click', handleIDEGenerate);
+    }
+    if (ideLanguageSelect) {
+        ideLanguageSelect.addEventListener('change', () => {
+            if (ideOutputCode) ideOutputCode.className = `language-${ideLanguageSelect.value}`;
+        });
+    }
 }

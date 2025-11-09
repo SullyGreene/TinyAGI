@@ -11,7 +11,8 @@ import { initializeDocumentQAStudio } from './features/document-qa-studio.js';
 import { initializeSettings } from './features/settings.js';
 import { applyTheme, initializeTheme } from './ui/theme.js';
 import { applySidebarState, initializeSidebar } from './ui/sidebar.js';
-import { initializeModal } from './ui/modal.js';
+import { initializeViewSwitcher } from './ui/view-switcher.js';
+import { initializeCollapsibles } from './ui/collapsible.js';
 
 /**
  * Main initialization function for the entire application.
@@ -24,7 +25,9 @@ async function initialize() {
     // Initialize core UI components
     initializeTheme();
     initializeSidebar();
-    ['settings-modal', 'agent-modal', 'edit-agent-modal', 'create-agent-modal', 'image-studio-modal', 'video-studio-modal', 'music-studio-modal', 'robotics-studio-modal', 'ide-studio-modal', 'document-qa-modal'].forEach(initializeModal);
+    initializeViewSwitcher();
+    initializeCollapsibles();
+    // Modals for 'edit' and 'create' agent still need to be initialized as they are true pop-ups
 
     // Initialize feature modules
     initializeSettings();
