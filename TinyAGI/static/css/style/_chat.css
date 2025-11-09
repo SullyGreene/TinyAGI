@@ -9,6 +9,7 @@
     display: flex;
     flex-direction: column;
     line-height: 1.6;
+    width: fit-content; /* Ensure message bubble fits content */
 }
 
 .message .content {
@@ -26,6 +27,7 @@
     background-color: var(--accent-primary);
     color: white;
     border-bottom-right-radius: 4px;
+    position: relative; /* Needed for positioning the copy button */
 }
 
 /* --- Assistant Message --- */
@@ -37,6 +39,13 @@
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     border-bottom-left-radius: 4px;
+}
+
+/* --- Error Message Styling --- */
+.message.assistant .content.error-message {
+    background-color: color-mix(in srgb, var(--accent-danger) 15%, var(--bg-secondary));
+    color: var(--accent-danger);
+    border: 1px solid var(--accent-danger);
 }
 
 /* --- Thinking Indicator --- */
@@ -84,7 +93,7 @@
     padding: 0;
 }
 
-.copy-button {
+.message.assistant .copy-button {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -99,11 +108,31 @@
     transition: opacity var(--transition-fast), background-color var(--transition-fast);
 }
 
+.message.user .copy-button {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition-fast), background-color var(--transition-fast);
+}
+
 pre:hover .copy-button {
+.message.user .content:hover .copy-button {
     opacity: 1;
 }
 
 .copy-button:hover {
     background-color: var(--accent-primary);
     color: white;
+}
+
+.message.user .copy-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }

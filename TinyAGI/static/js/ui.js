@@ -17,6 +17,7 @@ const maxTokensSlider = document.getElementById('max-tokens-slider');
 const maxTokensValue = document.getElementById('max-tokens-value');
 const systemPromptTextarea = document.getElementById('system-prompt');
 const themeToggleButton = document.getElementById('theme-toggle-button');
+const sidebarToggleButton = document.getElementById('sidebar-toggle');
 
 const THEME_KEY = 'tinyagi_theme';
 
@@ -51,6 +52,39 @@ function updateThemeIcon(theme) {
     themeToggleButton.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
 }
 
+const SIDEBAR_STATE_KEY = 'tinyagi_sidebar_state';
+
+/**
+ * Applies the saved sidebar state from localStorage or defaults to 'expanded'.
+ */
+export function applySidebarState() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    const savedState = localStorage.getItem(SIDEBAR_STATE_KEY) || 'expanded';
+    sidebar.className = savedState;
+    updateSidebarIcon(savedState);
+}
+
+/**
+ * Toggles the sidebar state between 'expanded' and 'collapsed'.
+ */
+export function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    const newState = sidebar.classList.contains('expanded') ? 'collapsed' : 'expanded';
+    sidebar.className = newState;
+    localStorage.setItem(SIDEBAR_STATE_KEY, newState);
+    updateSidebarIcon(newState);
+}
+
+function updateSidebarIcon(state) {
+    if (!sidebarToggleButton) return;
+    const collapseIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
+    const expandIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
+    sidebarToggleButton.innerHTML = state === 'expanded' ? collapseIcon : expandIcon;
+}
 
 
 /**
@@ -100,7 +134,7 @@ export function populateAgentManagerList(agentNames, activeAgentName) {
     const container = document.getElementById('agent-list-container');
     if (!container) return;
     container.innerHTML = ''; // Clear previous list
-
+    
     agentNames.forEach(agentName => {
         const agentItem = document.createElement('div');
         agentItem.className = 'agent-item';
@@ -108,27 +142,27 @@ export function populateAgentManagerList(agentNames, activeAgentName) {
             agentItem.classList.add('active');
         }
         agentItem.dataset.agentName = agentName;
-
-        const agentNameSpan = document.createElement('span');
+        
+        const agentNameSpan = document.createElement('div');
         agentNameSpan.textContent = agentName;
-        agentNameSpan.className = 'agent-name-selectable'; // Class to handle selection clicks
-
+        agentNameSpan.className = 'agent-name-selectable';
+        
         const agentActions = document.createElement('div');
         agentActions.className = 'agent-item-actions';
-
+        
         const editButton = document.createElement('button');
         editButton.textContent = 'Edit';
         editButton.className = 'button-secondary agent-edit-button';
         editButton.dataset.agentName = agentName;
-
+        
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.className = 'button-danger agent-delete-button';
         deleteButton.dataset.agentName = agentName;
-
+        
         agentActions.appendChild(editButton);
         agentActions.appendChild(deleteButton);
-
+        
         agentItem.appendChild(agentNameSpan);
         agentItem.appendChild(agentActions);
         container.appendChild(agentItem);
@@ -153,10 +187,16 @@ export function addMessage(role, content) {
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'content';
+    contentDiv.dataset.rawText = content; // Store raw text for copying
+
     // For user messages, we just set text content to avoid any HTML injection.
     // For assistant messages, we will parse markdown.
     if (role === 'user') {
         contentDiv.textContent = content;
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-button';
+        copyButton.textContent = 'Copy';
+        contentDiv.appendChild(copyButton);
     } else {
         // For assistant, we can put a placeholder or leave it empty,
         // as it will be populated by the streaming update function.

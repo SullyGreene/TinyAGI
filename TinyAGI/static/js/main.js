@@ -37,14 +37,16 @@ import {
     showImageGenerationSpinner,
     toggleTheme,
     applyTheme
+    toggleSidebar,
+    applySidebarState
 } from './ui.js';
 
 const agentSelect = document.getElementById('agent-select');
 const modeSelect = document.getElementById('mode-select');
 const chatWindow = document.getElementById('chat-window');
 const promptInput = document.getElementById('prompt-input'); // This is now a textarea
-const sendButton = document.getElementById('send-button');
-const clearChatButton = document.getElementById('new-chat-button'); // Renamed from 'clear-chat-button'
+const sendButton = document.getElementById('send-button'); 
+const clearChatButton = document.getElementById('new-chat-button');
 const stopButton = document.getElementById('stop-button');
 const agentListContainer = document.getElementById('agent-list-container');
 const manageAgentsButton = document.getElementById('manage-agents-button');
@@ -61,6 +63,7 @@ const closeMusicStudioModalButton = document.querySelector('#music-studio-modal 
 const closeVideoStudioModalButton = document.querySelector('#video-studio-modal .close-button');
 const saveAgentButton = document.getElementById('save-agent-button');
 const themeToggleButton = document.getElementById('theme-toggle-button');
+const sidebarToggleButton = document.getElementById('sidebar-toggle');
 const createAgentTypeSelect = document.getElementById('create-agent-type');
 
 const saveSettingsButton = document.getElementById('save-settings-button');
@@ -140,6 +143,12 @@ async function handleAgentChange(agentName) {
     }
 }
 
+function checkWelcomeScreen() {
+    const welcomeScreen = document.getElementById('welcome-screen');
+    if (!welcomeScreen) return;
+    welcomeScreen.style.display = messages.length === 0 ? 'flex' : 'none';
+}
+
 // --- Core Chat Logic ---
 
 async function handleSend() {
@@ -153,6 +162,7 @@ async function handleSend() {
         return;
     }
 
+    checkWelcomeScreen(); // Hide welcome screen on first message
     addMessage('user', prompt);
     messages.push({ role: 'user', content: prompt });
     promptInput.value = '';
@@ -192,7 +202,8 @@ async function handleSend() {
             messages.push({ role: 'assistant', content: assistantResponse + ' [Stopped]'});
         } else {
             console.error('Error sending message:', error);
-            updateAssistantMessage(assistantContentDiv, `Sorry, an error occurred: ${error.message}`);
+            updateAssistantMessage(assistantContentDiv, `**Error:**\n\nSorry, an error occurred: ${error.message}`);
+            assistantContentDiv.classList.add('error-message');
         }
     } finally {
         setFormDisabled(false);
@@ -204,10 +215,33 @@ async function handleSend() {
 
 // --- Event Handlers ---
 
+function handleCopyClick(event) {
+    if (!event.target.classList.contains('copy-button')) return;
+
+    const button = event.target;
+    const contentDiv = button.closest('.content');
+    if (!contentDiv) return;
+
+    // For assistant code blocks, find the <code> tag. For user messages, use the raw text.
+    const codeBlock = contentDiv.querySelector('code');
+    const textToCopy = codeBlock ? codeBlock.innerText : contentDiv.dataset.rawText;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        button.textContent = 'Copied!';
+        button.style.backgroundColor = '#28a745'; // Green color for success
+        setTimeout(() => {
+            button.textContent = 'Copy';
+            button.style.backgroundColor = ''; // Revert to original color
+        }, 2000);
+    }).catch(err => { 
+        console.error('Failed to copy text: ', err);
+    });
+}
+
 function handleClearChat() {
     messages = [];
     clearChatWindow();
-    addMessage('assistant', 'New chat started. How can I help you?');
+    checkWelcomeScreen(); // Show welcome screen
     console.log('Chat history cleared.');
 }
 
@@ -216,29 +250,6 @@ function handleStop() {
         abortController.abort();
         console.log('Abort button clicked. Cancelling stream...');
     }
-}
-
-// Handle clicks on dynamically added copy buttons
-function handleCopyClick(event) {
-    if (!event.target.classList.contains('copy-button')) return;
-
-    const button = event.target;
-    const pre = button.closest('pre');
-    if (!pre) return;
-
-    const code = pre.querySelector('code');
-    if (!code) return;
-
-    navigator.clipboard.writeText(code.innerText).then(() => {
-        button.textContent = 'Copied!';
-        button.style.backgroundColor = '#28a745'; // Green color for success
-        setTimeout(() => {
-            button.textContent = 'Copy';
-            button.style.backgroundColor = ''; // Revert to original color
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy text: ', err);
-    });
 }
 
 function handleAgentSelection(event) {
@@ -570,6 +581,7 @@ function handleSaveSettings() {
 
 function initialize() {
     applyTheme(); // Apply saved theme on startup
+    applySidebarState(); // Apply saved sidebar state on startup
     loadSettings(); // Load settings on startup
 
     // Set initial values in the UI from loaded settings
@@ -584,6 +596,7 @@ function initialize() {
     clearChatButton.addEventListener('click', handleClearChat);
     stopButton.addEventListener('click', handleStop);
     settingsButton.addEventListener('click', () => toggleSettingsModal(true));
+    themeToggleButton.addEventListener('click', toggleTheme);
     manageAgentsButton.addEventListener('click', () => {
         populateAgentManagerList(agentsList, agentSelect.value);
         toggleAgentModal(true);
@@ -599,6 +612,7 @@ function initialize() {
     closeAgentModalButton.addEventListener('click', () => toggleAgentModal(false));
     closeModalButton.addEventListener('click', () => toggleSettingsModal(false));
     saveAgentButton.addEventListener('click', handleSaveAgent);
+    sidebarToggleButton.addEventListener('click', toggleSidebar);
     imageStudioButton.addEventListener('click', () => {
         const imageAgents = agentsList.filter(name => name.includes('imagen'));
         populateImageAgentSelector(imageAgents);
@@ -640,6 +654,7 @@ function initialize() {
     // Add a single event listener to the chat window for copy buttons
     chatWindow.addEventListener('click', handleCopyClick);
 
+    checkWelcomeScreen(); // Initial check for the welcome screen
     // Add event listener for agent selection in the modal
     agentListContainer.addEventListener('click', handleAgentSelection);
 
@@ -676,4 +691,3 @@ function initialize() {
 }
 
 initialize();
-addMessage('assistant', 'Welcome to TinyAGI! Select an agent and start chatting.');

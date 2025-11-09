@@ -99,3 +99,43 @@
     display: flex;
     justify-content: flex-end;
 }
+
+/* --- Agent Manager Modal Specifics --- */
+#agent-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.agent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.agent-name-selectable {
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+}
+
+.agent-item.active {
+    border-color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 10%, var(--bg-tertiary));
+}
+
+.agent-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.agent-item .button-secondary,
+.agent-item .button-danger {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
