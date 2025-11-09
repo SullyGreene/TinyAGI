@@ -1,5 +1,54 @@
+/*
+TinyAGI Web UI - Main Stylesheet
+Author: Sully Greene
+*/
+
+/* --- Import Partials --- */
 @import url('style/_base.css');
 @import url('style/_layout.css');
 @import url('style/_chat.css');
 @import url('style/_components.css');
 @import url('style/_modals.css');
+
+/*
+   ==========================================================================
+   THEME VARIABLES
+   ==========================================================================
+*/
+
+:root {
+    --font-primary: 'Roboto', sans-serif;
+    --font-mono: 'Source Code Pro', monospace;
+
+    --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-fast: 0.2s var(--ease-out);
+    --transition-med: 0.4s var(--ease-out);
+}
+
+/* --- Dark Theme (Default) --- */
+:root, body[data-theme="dark"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2a2a2a;
+    --bg-input: #252525;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border-color: #333333;
+    --accent-primary: #4a90e2;
+    --accent-secondary: #7b61ff;
+    --accent-danger: #e94b3c;
+}
+
+/* --- Light Theme --- */
+body[data-theme="light"] {
+    --bg-primary: #f5f5f7;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e9e9eb;
+    --bg-input: #ffffff;
+    --text-primary: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --border-color: #d2d2d7;
+    --accent-primary: #007aff;
+    --accent-secondary: #5856d6;
+    --accent-danger: #ff3b30;
+}

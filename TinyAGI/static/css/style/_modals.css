@@ -1,24 +1,42 @@
-/* --- Modal Base --- */
+/*
+   ==========================================================================
+   MODALS
+   ==========================================================================
+*/
+
 .modal {
-    display: none;
+    display: none; /* Hidden by default */
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--modal-bg);
+    background-color: rgba(0, 0, 0, 0.6);
     justify-content: center;
     align-items: center;
+    animation: fadeIn 0.3s var(--ease-out);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modal-content {
-    background-color: var(--modal-content-bg);
-    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
     width: 90%;
     max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
+    animation: slideIn 0.4s var(--ease-out);
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
@@ -29,16 +47,22 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.modal-header h2 { margin: 0; }
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
 
 .close-button {
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 1.75rem;
     font-weight: bold;
     cursor: pointer;
+    transition: color var(--transition-fast);
 }
 
-.close-button:hover { color: var(--text-color); }
+.close-button:hover {
+    color: var(--text-primary);
+}
 
 .modal-body {
     padding: 1.5rem;
@@ -47,50 +71,31 @@
     gap: 1.5rem;
 }
 
-.modal-footer {
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: flex-end;
-    border-top: 1px solid var(--border-color);
-}
-
-/* --- Setting-specific styles --- */
-.setting label {
-    color: var(--text-secondary-color);
-    margin-bottom: 0.75rem;
-}
-
-.setting textarea, .setting input {
-    width: 100%;
-}
-
-/* --- Agent Modal --- */
-#agent-list-container {
+.modal-body .setting {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-}
-
-.agent-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-}
-
-.agent-item.active {
-    border-left: 4px solid var(--accent-color);
-    padding-left: calc(1rem - 3px); /* Adjust padding to keep content aligned */
-}
-
-.agent-name-selectable {
-    cursor: pointer;
-}
-
-.agent-item-actions {
-    display: flex;
     gap: 0.5rem;
+}
+
+.modal-body .setting label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.modal-body input[type="text"],
+.modal-body textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
 }
