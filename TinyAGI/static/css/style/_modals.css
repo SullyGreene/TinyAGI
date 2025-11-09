@@ -1,11 +1,11 @@
-/*
-   ==========================================================================
-   MODALS
-   ==========================================================================
-*/
+/* TinyAGI Web UI - Modal Styles */
+
+/* Import studio-specific modal styles */
+@import url('_image_studio.css');
+@import url('_robotics_studio.css');
 
 .modal {
-    display: none; /* Hidden by default */
+    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -14,90 +14,64 @@
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
     justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.3s var(--ease-out);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    align-items: flex-start; /* Align to top for better mobile view */
+    padding-top: 5vh;
+    animation: fadeIn var(--transition-fast) ease-in-out;
 }
 
 .modal-content {
     background-color: var(--bg-secondary);
-    border-radius: 12px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
     width: 90%;
     max-width: 500px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    animation: slideIn 0.4s var(--ease-out);
-}
-
-@keyframes slideIn {
-    from { transform: translateY(-30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    animation: slideIn var(--transition-med) var(--ease-out);
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
     margin: 0;
-    font-size: 1.25rem;
-}
-
-.close-button {
-    color: var(--text-secondary);
-    font-size: 1.75rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color var(--transition-fast);
-}
-
-.close-button:hover {
-    color: var(--text-primary);
+    font-size: 1.2rem;
 }
 
 .modal-body {
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
 }
 
-.modal-body .setting {
+.setting {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-bottom: 1.5rem; /* Consistent spacing */
 }
 
-.modal-body .setting label {
+.setting label {
     font-weight: 500;
     color: var(--text-secondary);
-}
-
-.modal-body input[type="text"],
-.modal-body textarea {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: var(--bg-input);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 .modal-footer {
     padding: 1rem 1.5rem;
-    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    border-bottom-left-radius: var(--border-radius-lg);
+    border-bottom-right-radius: var(--border-radius-lg);
 }
 
 /* --- Agent Manager Modal Specifics --- */
@@ -138,4 +112,48 @@
 .agent-item .button-danger {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
+}
+
+/* --- Studio & Other Modal Specifics --- */
+
+#video-studio-modal .modal-content,
+#document-qa-modal .modal-content {
+    max-width: 700px;
+}
+
+#music-studio-modal .modal-content {
+    max-width: 500px;
+}
+
+#music-studio-modal .modal-footer {
+    justify-content: space-between;
+}
+
+#video-result-container {
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.status-bar {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0.75rem;
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+.answer-container {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    min-height: 50px;
+    border: 1px solid var(--border-color);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem 0;
 }

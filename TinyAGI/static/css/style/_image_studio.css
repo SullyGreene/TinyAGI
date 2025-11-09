@@ -1,0 +1,30 @@
+/* TinyAGI Web UI - Image Studio Styles */
+
+#image-studio-modal .modal-content {
+    max-width: 80vw;
+    max-height: 90vh;
+}
+
+#image-studio-modal .modal-body {
+    flex-direction: row;
+    gap: 2rem;
+}
+
+#image-settings-panel {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+
+#image-results-panel {
+    flex: 1;
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(256px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    overflow-y: auto;
+}

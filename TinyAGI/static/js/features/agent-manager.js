@@ -3,7 +3,7 @@
 import { fetchAgents, deleteAgent, fetchAgentDetails, updateAgent, createAgent, fetchModels } from '../api.js';
 import { showToast } from '../toast.js';
 import { toggleModal } from '../ui/modal.js';
-import { populateAgentSelector, populateModeSelector, handleAgentError } from '../ui.js';
+import { populateAgentSelector, populateModeSelector, handleAgentError } from '../ui/common.js';
 
 const agentSelect = document.getElementById('agent-select');
 const agentListContainer = document.getElementById('agent-list-container');

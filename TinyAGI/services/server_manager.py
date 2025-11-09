@@ -24,6 +24,7 @@ console = Console()
 
 # Dictionary to hold background tasks for music generation
 music_sessions = {}
+document_stores = {} # In-memory store for document embeddings
 
 
 def setup_rich_logging():
@@ -530,6 +531,76 @@ def create_app():
             db.session.commit()
             return jsonify({'message': 'Conversation deleted successfully'}), 200
         return jsonify({'error': 'Conversation not found'}), 404
+
+    # --- Document Q&A API ---
+
+    @app.route('/api/documents/upload', methods=['POST'])
+    def upload_document():
+        """Endpoint to upload a document, process it, and store embeddings."""
+        if 'document' not in request.files:
+            return jsonify({'error': 'No document file provided'}), 400
+        
+        file = request.files['document']
+        agent_name = request.form.get('agent')
+        
+        if not agent_name:
+            return jsonify({'error': 'Agent name is required for embedding'}), 400
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent or not hasattr(agent, 'embed'):
+            return jsonify({'error': f"Agent '{agent_name}' not found or does not support embedding."}), 404
+
+        try:
+            # Read and chunk the document
+            content = file.read().decode('utf-8')
+            # Simple chunking by paragraph
+            chunks = [chunk for chunk in content.split('\n\n') if chunk.strip()]
+            
+            # Embed the chunks
+            embeddings = agent.embed(chunks)
+            
+            # Store in memory
+            doc_id = str(uuid.uuid4())
+            document_stores[doc_id] = {
+                'chunks': chunks,
+                'embeddings': embeddings
+            }
+            
+            return jsonify({'message': 'Document processed successfully', 'doc_id': doc_id}), 200
+        except Exception as e:
+            logger.error(f"Error processing document: {e}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/documents/query', methods=['POST'])
+    def query_document():
+        """Endpoint to ask a question about a processed document."""
+        data = request.get_json()
+        doc_id = data.get('doc_id')
+        question = data.get('question')
+        agent_name = data.get('agent')
+
+        if not all([doc_id, question, agent_name]):
+            return jsonify({'error': 'doc_id, question, and agent are required'}), 400
+
+        if doc_id not in document_stores:
+            return jsonify({'error': 'Document not found or not processed'}), 404
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent:
+            return jsonify({'error': f"Agent '{agent_name}' not found."}), 404
+
+        try:
+            # This is a simplified RAG (Retrieval-Augmented Generation) process
+            # A real implementation would use a vector database for similarity search
+            store = document_stores[doc_id]
+            context = "\n---\n".join(store['chunks']) # For simplicity, use all chunks as context
+            
+            prompt = f"Based on the following document context, please answer the question.\n\nContext:\n{context}\n\nQuestion: {question}"
+            answer = agent.chat([{'role': 'user', 'content': prompt}])
+            return jsonify({'answer': answer})
+        except Exception as e:
+            logger.error(f"Error querying document: {e}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
 
     # --- Music Generation Socket.IO Handlers ---
 

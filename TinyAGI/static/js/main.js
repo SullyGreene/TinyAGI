@@ -7,6 +7,7 @@ import { initializeVideoStudio } from './features/video-studio.js';
 import { initializeMusicStudio } from './features/music-studio.js';
 import { initializeRoboticsStudio } from './features/robotics-studio.js';
 import { initializeIDEStudio } from './features/ide-studio.js';
+import { initializeDocumentQAStudio } from './features/document-qa-studio.js';
 import { initializeSettings } from './features/settings.js';
 import { applyTheme, initializeTheme } from './ui/theme.js';
 import { applySidebarState, initializeSidebar } from './ui/sidebar.js';
@@ -23,7 +24,7 @@ async function initialize() {
     // Initialize core UI components
     initializeTheme();
     initializeSidebar();
-    ['settings-modal', 'agent-modal', 'edit-agent-modal', 'create-agent-modal', 'image-studio-modal', 'video-studio-modal', 'music-studio-modal', 'robotics-studio-modal', 'ide-studio-modal'].forEach(initializeModal);
+    ['settings-modal', 'agent-modal', 'edit-agent-modal', 'create-agent-modal', 'image-studio-modal', 'video-studio-modal', 'music-studio-modal', 'robotics-studio-modal', 'ide-studio-modal', 'document-qa-modal'].forEach(initializeModal);
 
     // Initialize feature modules
     initializeSettings();
@@ -33,6 +34,7 @@ async function initialize() {
     initializeMusicStudio();
     initializeRoboticsStudio(agentManager);
     initializeIDEStudio();
+    initializeDocumentQAStudio(agentManager);
 
     // Initialize the chat system
     initializeChat();

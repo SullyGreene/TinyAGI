@@ -1,0 +1,28 @@
+/* TinyAGI Web UI - Robotics Studio Styles */
+
+#robotics-studio-modal .modal-content {
+    max-width: 80vw;
+    max-height: 90vh;
+}
+
+#robotics-studio-modal .modal-body {
+    flex-direction: row;
+    gap: 2rem;
+}
+
+#robotics-settings-panel {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+
+#robotics-results-panel {
+    flex: 1;
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    overflow-y: auto;
+    position: relative;
+}
