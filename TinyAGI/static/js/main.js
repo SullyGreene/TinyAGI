@@ -39,6 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll
     }
 
+    function showThinkingIndicator() {
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.id = 'thinking-indicator';
+        thinkingDiv.className = 'message assistant';
+        thinkingDiv.innerHTML = `<div class="content thinking">Assistant is thinking...</div>`;
+        chatWindow.appendChild(thinkingDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function removeThinkingIndicator() {
+        const indicator = document.getElementById('thinking-indicator');
+        if (indicator) indicator.remove();
+    }
+
     async function handleSend() {
         const prompt = promptInput.value.trim();
         if (!prompt) return;
@@ -52,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessageToUI('user', prompt);
         messages.push({ role: 'user', content: prompt });
         promptInput.value = '';
+        sendButton.disabled = true;
+        promptInput.disabled = true;
+
+        showThinkingIndicator();
 
         try {
             const response = await fetch('/chat', {
@@ -60,16 +78,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     agent: selectedAgent,
                     messages: messages,
-                    stream: false // Streaming UI is more complex, starting with non-stream
+                    stream: true
                 })
             });
 
-            const data = await response.json();
-            const assistantResponse = data.response || `Error: ${data.error}`;
-            addMessageToUI('assistant', assistantResponse);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            removeThinkingIndicator();
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let assistantResponse = '';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'content';
+            messageDiv.appendChild(contentDiv);
+            chatWindow.appendChild(messageDiv);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                assistantResponse += chunk;
+                contentDiv.textContent = assistantResponse; // Consider using a Markdown parser here for better rendering
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
             messages.push({ role: 'assistant', content: assistantResponse });
 
         } catch (error) {
+            removeThinkingIndicator();
             console.error('Error sending message:', error);
             addMessageToUI('assistant', 'Sorry, an error occurred.');
         }
@@ -77,6 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sendButton.addEventListener('click', handleSend);
     promptInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleSend());
+    
+    promptInput.addEventListener('input', () => {
+        sendButton.disabled = promptInput.value.trim() === '';
+    });
 
     loadAgents();
 });
