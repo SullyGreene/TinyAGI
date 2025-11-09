@@ -4,6 +4,9 @@ const promptInput = document.getElementById('prompt-input');
 const sendButton = document.getElementById('send-button');
 const stopButton = document.getElementById('stop-button');
 const settingsModal = document.getElementById('settings-modal');
+const agentModal = document.getElementById('agent-modal');
+const editAgentModal = document.getElementById('edit-agent-modal');
+const createAgentModal = document.getElementById('create-agent-modal');
 const temperatureSlider = document.getElementById('temperature-slider');
 const temperatureValue = document.getElementById('temperature-value');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
@@ -26,6 +29,50 @@ export function populateAgentSelector(agentNames) {
     // Enable the form now that agents are loaded
     promptInput.disabled = false;
     sendButton.disabled = promptInput.value.trim() === '';
+}
+
+/**
+ * Populates the agent management list.
+ * @param {string[]} agentNames - An array of agent names.
+ * @param {string} activeAgentName - The name of the currently selected agent.
+ */
+export function populateAgentManagerList(agentNames, activeAgentName) {
+    const container = document.getElementById('agent-list-container');
+    if (!container) return;
+    container.innerHTML = ''; // Clear previous list
+
+    agentNames.forEach(agentName => {
+        const agentItem = document.createElement('div');
+        agentItem.className = 'agent-item';
+        if (agentName === activeAgentName) {
+            agentItem.classList.add('active');
+        }
+        agentItem.dataset.agentName = agentName;
+
+        const agentNameSpan = document.createElement('span');
+        agentNameSpan.textContent = agentName;
+        agentNameSpan.className = 'agent-name-selectable'; // Class to handle selection clicks
+
+        const agentActions = document.createElement('div');
+        agentActions.className = 'agent-item-actions';
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.className = 'button-secondary agent-edit-button';
+        editButton.dataset.agentName = agentName;
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'button-danger agent-delete-button';
+        deleteButton.dataset.agentName = agentName;
+
+        agentActions.appendChild(editButton);
+        agentActions.appendChild(deleteButton);
+
+        agentItem.appendChild(agentNameSpan);
+        agentItem.appendChild(agentActions);
+        container.appendChild(agentItem);
+    });
 }
 
 /**
@@ -149,6 +196,61 @@ export function toggleStopButton(isGenerating) {
 export function toggleSettingsModal(show) {
     if (settingsModal) {
         settingsModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Opens or closes the agent management modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleAgentModal(show) {
+    if (agentModal) {
+        agentModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Opens or closes the edit agent modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleEditAgentModal(show) {
+    if (editAgentModal) {
+        editAgentModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Populates the edit agent form with the agent's details.
+ * @param {object} agentDetails - The agent's configuration object.
+ */
+export function populateEditAgentForm(agentDetails) {
+    const nameTitle = document.getElementById('edit-agent-name-title');
+    const originalNameInput = document.getElementById('edit-agent-original-name');
+    const descriptionInput = document.getElementById('edit-agent-description');
+    const modelInput = document.getElementById('edit-agent-model');
+    const systemPromptTextarea = document.getElementById('edit-agent-system-prompt');
+
+    if (nameTitle) nameTitle.textContent = agentDetails.name;
+    if (originalNameInput) originalNameInput.value = agentDetails.name;
+
+    // Use empty string as fallback for optional fields
+    if (descriptionInput) descriptionInput.value = agentDetails.description || '';
+    if (systemPromptTextarea) systemPromptTextarea.value = agentDetails.system_prompt || '';
+
+    // The 'model' can be in different places depending on the agent type
+    let modelName = '';
+    if (agentDetails.model) modelName = agentDetails.model;
+    else if (agentDetails.config && agentDetails.config.generation_model) modelName = agentDetails.config.generation_model;
+    if (modelInput) modelInput.value = modelName;
+}
+
+/**
+ * Opens or closes the create agent modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleCreateAgentModal(show) {
+    if (createAgentModal) {
+        createAgentModal.style.display = show ? 'flex' : 'none';
     }
 }
 

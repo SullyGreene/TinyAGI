@@ -303,7 +303,7 @@ pre:hover .copy-button {
     border-top: 1px solid var(--border-color);
 }
 
-#save-settings-button {
+.button-primary {
     background-color: var(--accent-color);
     color: white;
     border: none;
@@ -312,6 +312,66 @@ pre:hover .copy-button {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
+    transition: background-color 0.2s;
 }
 
-#save-settings-button:hover { background-color: var(--accent-hover-color); }
+.button-primary:hover {
+    background-color: var(--accent-hover-color);
+}
+
+.button-secondary {
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.button-secondary:hover {
+    background-color: var(--button-hover-bg);
+}
+
+.button-danger {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/* --- Agent Modal --- */
+#agent-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.agent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.agent-item.active {
+    border-left: 4px solid var(--accent-color);
+    padding-left: calc(1rem - 3px); /* Adjust padding to keep content aligned */
+}
+
+.agent-name-selectable {
+    cursor: pointer;
+}
+
+.agent-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+}

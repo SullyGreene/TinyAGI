@@ -1,5 +1,5 @@
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { fetchAgents, streamChat } from './api.js';
+import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent } from './api.js';
 import {
     populateAgentSelector,
     handleAgentError,
@@ -8,8 +8,13 @@ import {
     updateAssistantMessage,
     setFormDisabled,
     clearChatWindow,
+    populateAgentManagerList,
     toggleStopButton,
     toggleSettingsModal,
+    toggleEditAgentModal,
+    toggleCreateAgentModal,
+    populateEditAgentForm,
+    toggleAgentModal,
     updateTemperatureDisplay,
     setTemperatureValue,
     updateMaxTokensDisplay,
@@ -23,8 +28,17 @@ const promptInput = document.getElementById('prompt-input'); // This is now a te
 const sendButton = document.getElementById('send-button');
 const clearChatButton = document.getElementById('new-chat-button'); // Renamed from 'clear-chat-button'
 const stopButton = document.getElementById('stop-button');
+const agentListContainer = document.getElementById('agent-list-container');
+const manageAgentsButton = document.getElementById('manage-agents-button');
 const settingsButton = document.getElementById('settings-button');
+const createAgentButton = document.getElementById('create-agent-button');
+const confirmCreateAgentButton = document.getElementById('confirm-create-agent-button');
+const closeEditAgentModalButton = document.querySelector('#edit-agent-modal .close-button');
+const closeAgentModalButton = document.querySelector('#agent-modal .close-button');
 const closeModalButton = document.querySelector('.modal .close-button');
+const closeCreateAgentModalButton = document.querySelector('#create-agent-modal .close-button');
+const saveAgentButton = document.getElementById('save-agent-button');
+
 const saveSettingsButton = document.getElementById('save-settings-button');
 const temperatureSlider = document.getElementById('temperature-slider');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
@@ -33,6 +47,7 @@ const systemPromptTextarea = document.getElementById('system-prompt');
 const SETTINGS_KEY = 'tinyagi_chat_settings';
 
 let messages = [];
+let agentsList = []; // To store the list of agents
 let abortController = null; // To cancel fetch requests
 let settings = {
     temperature: 1.0,
@@ -50,8 +65,9 @@ function adjustTextareaHeight(textarea) {
 
 async function loadAgents() {
     try {
-        const agents = await fetchAgents();
-        populateAgentSelector(agents);
+        agentsList = await fetchAgents();
+        populateAgentSelector(agentsList);
+        populateAgentManagerList(agentsList, agentSelect.value);
     } catch (error) {
         console.error("Could not load agents:", error);
         handleAgentError();
@@ -158,6 +174,110 @@ function handleCopyClick(event) {
     });
 }
 
+function handleAgentSelection(event) {
+    const target = event.target;
+
+    // Handle clicks on the "Delete" button
+    if (target.classList.contains('agent-delete-button')) {
+        handleDeleteAgent(target.dataset.agentName);
+        return;
+    }
+
+    // Handle clicks on the "Edit" button
+    if (target.classList.contains('agent-edit-button')) {
+        handleEditAgent(target.dataset.agentName);
+        return;
+    }
+
+    // Handle clicks on the agent name for selection
+    const selectableArea = target.closest('.agent-name-selectable');
+    if (!selectableArea) return;
+
+    const agentItem = selectableArea.closest('.agent-item');
+
+    const agentName = agentItem.dataset.agentName;
+    if (agentName) {
+        // Set the main agent selector
+        agentSelect.value = agentName;
+
+        // Update the active state in the modal list
+        populateAgentManagerList(agentsList, agentName);
+
+        // Close the modal
+        toggleAgentModal(false);
+    }
+}
+
+async function handleDeleteAgent(agentName) {
+    if (!confirm(`Are you sure you want to delete the agent "${agentName}"? This cannot be undone.`)) {
+        return;
+    }
+    try {
+        const result = await deleteAgent(agentName);
+        alert(result.message); // Show success message
+        await loadAgents(); // Reload agent lists
+    } catch (error) {
+        console.error(`Failed to delete agent ${agentName}:`, error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
+async function handleEditAgent(agentName) {
+    try {
+        const agentDetails = await fetchAgentDetails(agentName);
+        populateEditAgentForm(agentDetails);
+        toggleEditAgentModal(true);
+    } catch (error) {
+        console.error(`Failed to fetch details for agent ${agentName}:`, error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
+async function handleSaveAgent() {
+    const originalName = document.getElementById('edit-agent-original-name').value;
+    const description = document.getElementById('edit-agent-description').value;
+    const model = document.getElementById('edit-agent-model').value;
+    const system_prompt = document.getElementById('edit-agent-system-prompt').value;
+
+    const updateData = {
+        description,
+        model, // The backend will know where to place this
+        system_prompt,
+    };
+
+    try {
+        const result = await updateAgent(originalName, updateData);
+        alert(result.message);
+        toggleEditAgentModal(false);
+        await loadAgents(); // Reload agent lists to reflect changes
+    } catch (error) {
+        console.error(`Failed to update agent ${originalName}:`, error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
+async function handleCreateAgent() {
+    const name = document.getElementById('create-agent-name').value.trim();
+    const description = document.getElementById('create-agent-description').value;
+    const model = document.getElementById('create-agent-model').value;
+    const system_prompt = document.getElementById('create-agent-system-prompt').value;
+
+    if (!name) {
+        alert('Agent Name is required.');
+        return;
+    }
+
+    try {
+        const result = await createAgent({ name, description, model, system_prompt });
+        alert(result.message);
+        toggleCreateAgentModal(false);
+        await loadAgents(); // Reload agent lists
+    } catch (error) {
+        console.error(`Failed to create agent:`, error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
 // --- Settings Management ---
 
 function loadSettings() {
@@ -207,7 +327,17 @@ function initialize() {
     clearChatButton.addEventListener('click', handleClearChat);
     stopButton.addEventListener('click', handleStop);
     settingsButton.addEventListener('click', () => toggleSettingsModal(true));
+    manageAgentsButton.addEventListener('click', () => {
+        populateAgentManagerList(agentsList, agentSelect.value);
+        toggleAgentModal(true);
+    });
+    createAgentButton.addEventListener('click', () => toggleCreateAgentModal(true));
+    confirmCreateAgentButton.addEventListener('click', handleCreateAgent);
+    closeEditAgentModalButton.addEventListener('click', () => toggleEditAgentModal(false));
+    closeAgentModalButton.addEventListener('click', () => toggleAgentModal(false));
     closeModalButton.addEventListener('click', () => toggleSettingsModal(false));
+    saveAgentButton.addEventListener('click', handleSaveAgent);
+    closeCreateAgentModalButton.addEventListener('click', () => toggleCreateAgentModal(false));
     saveSettingsButton.addEventListener('click', handleSaveSettings);
     temperatureSlider.addEventListener('input', updateTemperatureDisplay);
     maxTokensSlider.addEventListener('input', updateMaxTokensDisplay);
@@ -228,6 +358,9 @@ function initialize() {
     
     // Add a single event listener to the chat window for copy buttons
     chatWindow.addEventListener('click', handleCopyClick);
+
+    // Add event listener for agent selection in the modal
+    agentListContainer.addEventListener('click', handleAgentSelection);
 
     loadAgents();
 }

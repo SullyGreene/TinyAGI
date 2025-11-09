@@ -12,6 +12,7 @@ import logging
 from rich.logging import RichHandler
 from rich.console import Console
 from rich.panel import Panel
+import json
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -46,6 +47,7 @@ def create_app():
         try:
             agent_system = AgentSystem(config_files=config_files)
             app.agent_system = agent_system
+            app.config['AGENT_CONFIG_PATH'] = agent_system.config_files[0] if agent_system.config_files else None
         except Exception as e:
             logger.error(f"Failed to initialize AgentSystem: {e}")
             # We can let the app start and fail on requests, or exit here.
@@ -73,6 +75,129 @@ def create_app():
             return jsonify({'error': 'AgentSystem not initialized'}), 500
         agents = list(app.agent_system.agent_manager.loaded_agents.keys())
         return jsonify(agents)
+
+    @app.route('/api/agents', methods=['POST'])
+    def create_agent():
+        """Endpoint to create a new agent."""
+        config_path = app.config.get('AGENT_CONFIG_PATH')
+        if not config_path or not os.path.exists(config_path):
+            return jsonify({'error': 'Agent configuration file not found or accessible.'}), 500
+
+        try:
+            with open(config_path, 'r') as f:
+                config_data = json.load(f)
+        except (IOError, json.JSONDecodeError) as e:
+            return jsonify({'error': f'Failed to read or parse agent config: {str(e)}'}), 500
+
+        new_agent_data = request.get_json()
+        agent_name = new_agent_data.get('name')
+
+        if not agent_name:
+            return jsonify({'error': 'Agent name is required.'}), 400
+
+        # Check for uniqueness
+        if any(agent.get('name') == agent_name for agent in config_data.get('agents', [])):
+            return jsonify({'error': f"An agent with the name '{agent_name}' already exists."}), 409
+
+        # Create a new agent config based on a simple template (e.g., Gemini)
+        new_agent_config = {
+            "name": agent_name,
+            "module": "gemini_agent",
+            "class": "GeminiAgent",
+            "source": "local",
+            "description": new_agent_data.get('description', ''),
+            "system_prompt": new_agent_data.get('system_prompt', ''),
+            "config": {
+                "generation_model": new_agent_data.get('model', 'gemini-1.5-flash'),
+                "embedding_model": "models/embedding-001"
+            }
+        }
+
+        config_data['agents'].append(new_agent_config)
+
+        try:
+            with open(config_path, 'w') as f:
+                json.dump(config_data, f, indent=2)
+            
+            # Reload the agent system to apply changes
+            initialize_agent_system(config_files=config_path)
+            return jsonify({'message': f"Agent '{agent_name}' created successfully.", 'agent': new_agent_config}), 201
+        except Exception as e:
+            logger.error(f"Error creating agent '{agent_name}': {e}")
+            return jsonify({'error': f'Failed to create agent: {str(e)}'}), 500
+
+    @app.route('/api/agents/<string:agent_name>', methods=['GET', 'PUT', 'DELETE'])
+    def manage_agent(agent_name):
+        """Endpoint to get, update, or delete a specific agent's config."""
+        config_path = app.config.get('AGENT_CONFIG_PATH')
+        if not config_path or not os.path.exists(config_path):
+            return jsonify({'error': 'Agent configuration file not found or accessible.'}), 500
+
+        try:
+            with open(config_path, 'r') as f:
+                config_data = json.load(f)
+        except (IOError, json.JSONDecodeError) as e:
+            return jsonify({'error': f'Failed to read or parse agent config: {str(e)}'}), 500
+
+        # Find the agent's configuration
+        agent_config = None
+        agent_index = -1
+        for i, agent in enumerate(config_data.get('agents', [])):
+            if agent.get('name') == agent_name:
+                agent_config = agent
+                agent_index = i
+                break
+
+        if agent_index == -1:
+            return jsonify({'error': f"Agent '{agent_name}' not found in configuration."}), 404
+
+        if request.method == 'GET':
+            return jsonify(agent_config)
+
+        if request.method == 'DELETE':
+            try:
+                # Remove the agent from the list
+                config_data['agents'].pop(agent_index)
+                with open(config_path, 'w') as f:
+                    json.dump(config_data, f, indent=2)
+                
+                # Reload the agent system to apply changes
+                initialize_agent_system(config_files=config_path)
+                return jsonify({'message': f"Agent '{agent_name}' deleted successfully."}), 200
+            except Exception as e:
+                logger.error(f"Error deleting agent '{agent_name}': {e}")
+                return jsonify({'error': f'Failed to delete agent: {str(e)}'}), 500
+
+        if request.method == 'PUT':
+            try:
+                update_data = request.get_json()
+                
+                # Update the agent's configuration
+                # We only update specific, editable fields to avoid breaking the config
+                editable_fields = ['description', 'model', 'system_prompt']
+                for field in editable_fields:
+                    if field in update_data:
+                        config_data['agents'][agent_index][field] = update_data[field]
+                
+                # Handle nested config for provider-specific settings like 'temperature'
+                if 'config' in update_data and 'config' in config_data['agents'][agent_index]:
+                    nested_editable_fields = ['temperature', 'max_tokens']
+                    for field in nested_editable_fields:
+                         if field in update_data['config']:
+                            config_data['agents'][agent_index]['config'][field] = update_data['config'][field]
+
+                with open(config_path, 'w') as f:
+                    json.dump(config_data, f, indent=2)
+
+                # Reload the agent system to apply changes
+                initialize_agent_system(config_files=config_path)
+                return jsonify({'message': f"Agent '{agent_name}' updated successfully.", 'agent': config_data['agents'][agent_index]}), 200
+
+            except Exception as e:
+                logger.error(f"Error updating agent '{agent_name}': {e}")
+                return jsonify({'error': f'Failed to update agent: {str(e)}'}), 500
+        
+        return jsonify({'error': 'Method not allowed'}), 405
 
     @app.route('/chat', methods=['POST'])
     def chat():

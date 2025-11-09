@@ -23,6 +23,9 @@
                 <button id="settings-button" class="icon-button" title="Settings">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.44,0.17-0.48,0.41L9.2,5.7c-0.59,0.24-1.13,0.56-1.62,0.94L5.19,5.68c-0.22-0.08-0.47,0-0.59,0.22L2.68,9.22 c-0.11,0.2-0.06,0.47,0.12,0.61l2.03,1.58C4.77,11.69,4.75,12,4.75,12.31c0,0.31,0.02,0.62,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.04,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.48-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.11-0.2,0.06-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
                 </button>
+                <button id="manage-agents-button" class="icon-button" title="Manage Agents">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                </button>
             </div>
         </div>
         <div class="sidebar-section">
@@ -75,10 +78,83 @@
         </div>
     </div>
 
+    <div id="agent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manage Agents</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="agent-list-container">
+                    <!-- Agent items will be populated here by ui.js -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="create-agent-button" class="button-primary">Create New Agent</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-agent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Agent: <span id="edit-agent-name-title"></span></h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-agent-original-name">
+                <div class="setting">
+                    <label for="edit-agent-description">Description</label>
+                    <input type="text" id="edit-agent-description" placeholder="A brief description of the agent.">
+                </div>
+                <div class="setting">
+                    <label for="edit-agent-model">Model</label>
+                    <input type="text" id="edit-agent-model" placeholder="e.g., gemini-1.5-flash, gpt-4o">
+                </div>
+                <div class="setting">
+                    <label for="edit-agent-system-prompt">System Prompt</label>
+                    <textarea id="edit-agent-system-prompt" rows="8" placeholder="The system-level instructions for the agent."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-agent-button" class="button-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-agent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Agent</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting">
+                    <label for="create-agent-name">Agent Name</label>
+                    <input type="text" id="create-agent-name" placeholder="A unique name for the agent">
+                </div>
+                <div class="setting">
+                    <label for="create-agent-description">Description</label>
+                    <input type="text" id="create-agent-description" placeholder="A brief description of the agent's purpose">
+                </div>
+                <div class="setting">
+                    <label for="create-agent-model">Model Name</label>
+                    <input type="text" id="create-agent-model" value="gemini-1.5-flash" placeholder="e.g., gemini-1.5-flash, gpt-4o">
+                </div>
+                <div class="setting">
+                    <label for="create-agent-system-prompt">System Prompt</label>
+                    <textarea id="create-agent-system-prompt" rows="6" placeholder="You are a helpful assistant."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-create-agent-button" class="button-primary">Create Agent</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/ui.js') }}"></script>
 </body>
 </html>
-
