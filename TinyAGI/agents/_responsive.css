@@ -1,0 +1,111 @@
+/* TinyAGI Web UI - Responsive Styles */
+
+/* --- Media Queries for Mobile & Tablet --- */
+
+/* Common breakpoint for tablets and smaller devices */
+@media (max-width: 1024px) {
+    .modal-content {
+        max-width: 90vw !important;
+        max-height: 85vh !important;
+    }
+
+    /* Make studio modals stack vertically */
+    #image-studio-modal .modal-body,
+    #robotics-studio-modal .modal-body {
+        flex-direction: column !important;
+    }
+
+    #image-settings-panel,
+    #robotics-settings-panel {
+        width: 100% !important;
+        border-right: none;
+        padding-right: 0;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Common breakpoint for mobile phones */
+@media (max-width: 768px) {
+    /* --- Main Layout --- */
+    #app-container {
+        flex-direction: column;
+    }
+
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform var(--transition-med);
+        border-right: 1px solid var(--border-color);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+
+    #sidebar.expanded {
+        transform: translateX(0);
+        width: 280px; /* Give it a fixed width when open on mobile */
+    }
+
+    #sidebar.collapsed {
+        transform: translateX(-100%); /* Ensure it's hidden when collapsed */
+    }
+
+    #main-content {
+        width: 100%;
+        height: 100vh;
+        padding-left: 0; /* Remove padding as sidebar is overlay */
+    }
+
+    /* --- Sidebar Toggle --- */
+    /* Reposition the toggle to be visible */
+    #sidebar-toggle {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+        background-color: var(--bg-secondary);
+        border-radius: 50%;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        display: flex; /* Make sure it's visible */
+    }
+
+    /* --- Header & Input Area --- */
+    .sidebar-header h2 {
+        margin-left: 40px; /* Make space for the repositioned toggle button */
+    }
+
+    #input-area {
+        padding: 8px;
+    }
+
+    #prompt-input {
+        padding: 12px;
+    }
+
+    /* --- Chat Messages --- */
+    .message {
+        padding: 12px 10px;
+    }
+
+    /* --- Modals --- */
+    .modal-content {
+        width: 95vw !important;
+        max-width: 95vw !important;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    /* --- Welcome Screen --- */
+    #welcome-screen h1 {
+        font-size: 1.8rem;
+    }
+
+    #welcome-screen p {
+        font-size: 1rem;
+    }
+}

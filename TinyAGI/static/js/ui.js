@@ -19,6 +19,7 @@ const maxTokensValue = document.getElementById('max-tokens-value');
 const systemPromptTextarea = document.getElementById('system-prompt');
 const themeToggleButton = document.getElementById('theme-toggle-button');
 const sidebarToggleButton = document.getElementById('sidebar-toggle');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
 
 const THEME_KEY = 'tinyagi_theme';
 
@@ -74,10 +75,24 @@ export function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
-    const newState = sidebar.classList.contains('expanded') ? 'collapsed' : 'expanded';
+    const isExpanded = sidebar.classList.contains('expanded');
+    const newState = isExpanded ? 'collapsed' : 'expanded';
     sidebar.className = newState;
     localStorage.setItem(SIDEBAR_STATE_KEY, newState);
     updateSidebarIcon(newState);
+
+    // Handle overlay for mobile
+    if (window.innerWidth <= 768) {
+        if (newState === 'expanded') {
+            sidebarOverlay.style.visibility = 'visible';
+            sidebarOverlay.style.opacity = '1';
+            sidebarOverlay.style.transition = 'opacity var(--transition-med)';
+        } else {
+            sidebarOverlay.style.opacity = '0';
+            sidebarOverlay.style.transition = 'opacity var(--transition-med), visibility 0s var(--transition-med)';
+            sidebarOverlay.style.visibility = 'hidden';
+        }
+    }
 }
 
 function updateSidebarIcon(state) {
@@ -85,6 +100,15 @@ function updateSidebarIcon(state) {
     const collapseIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
     const expandIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
     sidebarToggleButton.innerHTML = state === 'expanded' ? collapseIcon : expandIcon;
+}
+
+// Add event listener for the overlay
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => {
+        if (document.getElementById('sidebar').classList.contains('expanded')) {
+            toggleSidebar();
+        }
+    });
 }
 
 

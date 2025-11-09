@@ -49,6 +49,7 @@ const promptInput = document.getElementById('prompt-input'); // This is now a te
 const sendButton = document.getElementById('send-button'); 
 const clearChatButton = document.getElementById('new-chat-button');
 const stopButton = document.getElementById('stop-button');
+const conversationHistoryContainer = document.getElementById('conversation-history-container');
 const agentListContainer = document.getElementById('agent-list-container');
 const manageAgentsButton = document.getElementById('manage-agents-button');
 const settingsButton = document.getElementById('settings-button');
