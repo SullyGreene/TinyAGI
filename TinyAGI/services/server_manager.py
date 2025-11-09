@@ -22,20 +22,16 @@ def create_app():
     app = Flask(__name__)
     setup_logging()
 
-    # Default agent name (ensure this matches an agent defined in your configuration)
-    default_agent_name = 'ollama_agent'
-
     def initialize_agent_system(config_files='config/agent_config.json'):
         """Initializes the AgentSystem and attaches it to the app context."""
-        agent_system = AgentSystem(config_files=config_files)
-        agent_manager = agent_system.agent_manager
-        agent = agent_manager.get_agent(default_agent_name)
-        if not agent:
-            logger.error(f"Default agent '{default_agent_name}' not found.")
-            raise ValueError(f"Agent '{default_agent_name}' is not available.")
-        
-        app.agent_system = agent_system
-        app.agent = agent
+        try:
+            agent_system = AgentSystem(config_files=config_files)
+            app.agent_system = agent_system
+        except Exception as e:
+            logger.error(f"Failed to initialize AgentSystem: {e}")
+            # We can let the app start and fail on requests, or exit here.
+            # For a web UI, it's better to let it start and show an error.
+            app.agent_system = None
         app.config['AGENT_CONFIG'] = agent_system.config
         app.plugin_manager = agent_system.plugin_manager
         app.task_manager = agent_system.task_manager
@@ -46,20 +42,18 @@ def create_app():
     with app.app_context():
         initialize_agent_system()
 
-    @app.route('/', methods=['GET', 'POST'])
+    @app.route('/')
     def index():
-        response = None
-        if request.method == 'POST':
-            prompt = request.form['prompt']
-            agent_name = request.form['agent']
-            agent = app.agent_system.agent_manager.get_agent(agent_name)
-            if agent:
-                response = agent.generate_text(prompt)
-            else:
-                response = f"Agent '{agent_name}' not found."
-        
+        """Serve the main web UI."""
+        return render_template('index.html')
+
+    @app.route('/api/agents', methods=['GET'])
+    def get_agents():
+        """Endpoint to get the list of available agents."""
+        if not app.agent_system:
+            return jsonify({'error': 'AgentSystem not initialized'}), 500
         agents = list(app.agent_system.agent_manager.loaded_agents.keys())
-        return render_template('index.html', agents=agents, response=response)
+        return jsonify(agents)
 
     @app.route('/chat', methods=['POST'])
     def chat():
@@ -68,29 +62,32 @@ def create_app():
         """
         data = request.get_json()
         messages = data.get('messages')
-        inference_params = data.get('inference_params', {})
+        agent_name = data.get('agent')
         stream = data.get('stream', False)
 
         if not messages:
             return jsonify({'error': 'Messages are required'}), 400
+        if not agent_name:
+            return jsonify({'error': 'Agent name is required'}), 400
+        if not app.agent_system:
+            return jsonify({'error': 'AgentSystem not initialized'}), 500
 
-        # Build prompt from messages
-        prompt = ''
-        for msg in messages:
-            role = msg.get('role', 'user')
-            content = msg.get('content', '')
-            prompt += f"{role.capitalize()}: {content}\n"
-
-        prompt += "Assistant:"
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent:
+            return jsonify({'error': f"Agent '{agent_name}' not found"}), 404
 
         try:
+            # The agent's chat method should handle the list of messages directly.
+            # We'll use the last user message content as the primary input for now.
+            # A more robust implementation would pass the whole message history.
+            last_user_message = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), '')
             if stream:
                 def generate():
-                    for chunk in app.agent.generate_text(prompt, stream=True):
+                    for chunk in agent.chat(last_user_message, stream=True):
                         yield chunk
                 return Response(generate(), mimetype='text/plain')
             else:
-                generated_text = app.agent.generate_text(prompt)
+                generated_text = agent.chat(last_user_message)
                 return jsonify({'response': generated_text})
         except Exception as e:
             logger.error(f"Error during chat: {e}")
@@ -103,20 +100,28 @@ def create_app():
         """
         data = request.get_json()
         prompt = data.get('prompt')
-        inference_params = data.get('inference_params', {})
+        agent_name = data.get('agent')
         stream = data.get('stream', False)
 
         if not prompt:
             return jsonify({'error': 'Prompt is required'}), 400
+        if not agent_name:
+            return jsonify({'error': 'Agent name is required'}), 400
+        if not app.agent_system:
+            return jsonify({'error': 'AgentSystem not initialized'}), 500
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent:
+            return jsonify({'error': f"Agent '{agent_name}' not found"}), 404
 
         try:
             if stream:
                 def generate_stream():
-                    for chunk in app.agent.generate_text(prompt, stream=True):
+                    for chunk in agent.generate_text(prompt, stream=True):
                         yield chunk
                 return Response(generate_stream(), mimetype='text/plain')
             else:
-                generated_text = app.agent.generate_text(prompt)
+                generated_text = agent.generate_text(prompt)
                 return jsonify({'response': generated_text})
         except Exception as e:
             logger.error(f"Error during text generation: {e}")
@@ -129,12 +134,21 @@ def create_app():
         """
         data = request.get_json()
         input_data = data.get('input')
+        agent_name = data.get('agent')
 
         if not input_data:
             return jsonify({'error': 'Input text is required'}), 400
+        if not agent_name:
+            return jsonify({'error': 'Agent name is required'}), 400
+        if not app.agent_system:
+            return jsonify({'error': 'AgentSystem not initialized'}), 500
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent:
+            return jsonify({'error': f"Agent '{agent_name}' not found"}), 404
 
         try:
-            embeddings = app.agent.embed(input_data)
+            embeddings = agent.embed(input_data)
             return jsonify({'embedding': embeddings})
         except Exception as e:
             logger.error(f"Error during embedding: {e}")
