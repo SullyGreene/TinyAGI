@@ -51,7 +51,7 @@ class AgentManager:
             try:
                 module = importlib.import_module(f'TinyAGI.agents.{module_name}')
                 agent_class = getattr(module, class_name)
-                agent_instance = agent_class(config)
+                agent_instance = agent_class(config, self.module_manager)
                 loaded_agents[name] = agent_instance
                 logger.info(f"Successfully loaded agent: {name}")
             except Exception as e:
