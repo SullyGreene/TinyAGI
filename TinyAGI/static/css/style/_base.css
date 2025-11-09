@@ -1,0 +1,32 @@
+/* --- Base & Typography --- */
+:root {
+    --bg-color: #1e1e1e;
+    --sidebar-bg: #252526;
+    --chat-bg: #1e1e1e;
+    --input-bg: #3c3c3c;
+    --border-color: #333;
+    --text-color: #d4d4d4;
+    --text-secondary-color: #a0a0a0;
+    --accent-color: #0e639c;
+    --accent-hover-color: #1177bb;
+    --user-msg-bg: #0e639c;
+    --assistant-msg-bg: #3a3d41;
+    --modal-bg: rgba(0, 0, 0, 0.6);
+    --modal-content-bg: #2d2d2d;
+    --button-bg: #4a4a4a;
+    --button-hover-bg: #5a5a5a;
+    --danger-color: #d9534f;
+    --danger-hover-color: #c9302c;
+    --font-family: 'Roboto', sans-serif;
+    --code-font-family: 'Source Code Pro', monospace;
+}
+
+body {
+    font-family: var(--font-family);
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+}

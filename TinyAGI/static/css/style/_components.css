@@ -1,0 +1,83 @@
+/* --- Buttons --- */
+.icon-button, #send-button, #stop-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--text-secondary-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.icon-button:hover {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+#send-button, #stop-button {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 0.75rem;
+    align-self: flex-end;
+}
+
+#send-button:hover {
+    background-color: var(--accent-hover-color);
+}
+
+#send-button:disabled {
+    background-color: var(--button-bg);
+    cursor: not-allowed;
+}
+
+#stop-button {
+    background-color: var(--danger-color);
+}
+
+#stop-button:hover {
+    background-color: var(--danger-hover-color);
+}
+
+.button-primary {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.button-primary:hover {
+    background-color: var(--accent-hover-color);
+}
+
+.button-secondary {
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.button-secondary:hover {
+    background-color: var(--button-hover-bg);
+}
+
+.button-danger {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
