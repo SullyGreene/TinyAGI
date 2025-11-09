@@ -1,5 +1,5 @@
 /* --- Base & Typography --- */
-:root {
+:root, [data-theme='dark'] {
     --bg-color: #1e1e1e;
     --sidebar-bg: #252526;
     --chat-bg: #1e1e1e;
@@ -19,6 +19,26 @@
     --danger-hover-color: #c9302c;
     --font-family: 'Roboto', sans-serif;
     --code-font-family: 'Source Code Pro', monospace;
+}
+
+[data-theme='light'] {
+    --bg-color: #f5f5f5;
+    --sidebar-bg: #ffffff;
+    --chat-bg: #f5f5f5;
+    --input-bg: #e0e0e0;
+    --border-color: #d1d1d1;
+    --text-color: #212121;
+    --text-secondary-color: #666666;
+    --accent-color: #1a73e8;
+    --accent-hover-color: #1765c7;
+    --user-msg-bg: #1a73e8;
+    --assistant-msg-bg: #e8f0fe;
+    --modal-bg: rgba(0, 0, 0, 0.4);
+    --modal-content-bg: #ffffff;
+    --button-bg: #e0e0e0;
+    --button-hover-bg: #d1d1d1;
+    --danger-color: #d9534f;
+    --danger-hover-color: #c9302c;
 }
 
 body {

@@ -19,7 +19,9 @@ import {
     setTemperatureValue,
     updateMaxTokensDisplay,
     setMaxTokensValue,
-    setSystemPrompt
+    setSystemPrompt,
+    toggleTheme,
+    applyTheme
 } from './ui.js';
 
 const agentSelect = document.getElementById('agent-select');
@@ -38,10 +40,12 @@ const closeAgentModalButton = document.querySelector('#agent-modal .close-button
 const closeModalButton = document.querySelector('.modal .close-button');
 const closeCreateAgentModalButton = document.querySelector('#create-agent-modal .close-button');
 const saveAgentButton = document.getElementById('save-agent-button');
+const themeToggleButton = document.getElementById('theme-toggle-button');
 
 const saveSettingsButton = document.getElementById('save-settings-button');
 const temperatureSlider = document.getElementById('temperature-slider');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
+
 const systemPromptTextarea = document.getElementById('system-prompt');
 
 const SETTINGS_KEY = 'tinyagi_chat_settings';
@@ -258,6 +262,7 @@ async function handleSaveAgent() {
 
 async function handleCreateAgent() {
     const name = document.getElementById('create-agent-name').value.trim();
+    const type = document.getElementById('create-agent-type').value;
     const description = document.getElementById('create-agent-description').value;
     const model = document.getElementById('create-agent-model').value;
     const system_prompt = document.getElementById('create-agent-system-prompt').value;
@@ -268,7 +273,7 @@ async function handleCreateAgent() {
     }
 
     try {
-        const result = await createAgent({ name, description, model, system_prompt });
+        const result = await createAgent({ name, type, description, model, system_prompt });
         alert(result.message);
         toggleCreateAgentModal(false);
         await loadAgents(); // Reload agent lists
@@ -314,6 +319,7 @@ function handleSaveSettings() {
 // --- Initialization ---
 
 function initialize() {
+    applyTheme(); // Apply saved theme on startup
     loadSettings(); // Load settings on startup
 
     // Set initial values in the UI from loaded settings
@@ -331,6 +337,7 @@ function initialize() {
         populateAgentManagerList(agentsList, agentSelect.value);
         toggleAgentModal(true);
     });
+    themeToggleButton.addEventListener('click', toggleTheme);
     createAgentButton.addEventListener('click', () => toggleCreateAgentModal(true));
     confirmCreateAgentButton.addEventListener('click', handleCreateAgent);
     closeEditAgentModalButton.addEventListener('click', () => toggleEditAgentModal(false));

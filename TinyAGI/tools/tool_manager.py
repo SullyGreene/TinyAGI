@@ -14,28 +14,30 @@ import git  # Requires gitpython
 logger = logging.getLogger(__name__)
 
 class ToolManager:
-    def __init__(self, tools_config):
+    def __init__(self, tools_config, base_path=None):
         """
-        Initialize the ToolManager with the provided tools configuration.
+        Initialize the ToolManager.
 
         :param tools_config: List of tool configurations.
+        :param base_path: The base path for resolving local modules.
         """
         self.tools_config = tools_config
+        self.base_path = base_path or os.path.dirname(__file__)
         self.loaded_tools = self.load_tools()
 
     def load_tools(self):
         """
         Load all tools based on the configuration.
-
-        :return: Dictionary of loaded tool instances keyed by tool name.
         """
         loaded_tools = {}
         for tool_info in self.tools_config:
             name = tool_info.get('name')
             module_name = tool_info.get('module')
-            class_name = tool_info.get('class', name)
+            class_name = tool_info.get('class')
             source = tool_info.get('source', 'local')
             config = tool_info.get('config', {})
+
+            logger.info(f"Loading tool '{name}' from module '{module_name}' with source '{source}'.")
 
             if source == 'github':
                 repo_url = tool_info.get('repo_url')
@@ -45,83 +47,44 @@ class ToolManager:
                 self.load_tool_from_github(module_name, repo_url)
 
             try:
+                # Dynamically import the module from the tools directory
                 module = importlib.import_module(f'TinyAGI.tools.{module_name}')
                 tool_class = getattr(module, class_name)
                 tool_instance = tool_class(config)
                 loaded_tools[name] = tool_instance
-                logger.info(f"Loaded tool: {name}")
+                logger.info(f"Successfully loaded tool: {name}")
+            except AttributeError:
+                logger.error(f"Tool class '{class_name}' not found in module '{module_name}'.")
             except Exception as e:
-                logger.error(f"Failed to load tool '{name}': {e}")
+                logger.error(f"Failed to load tool '{name}': {e}", exc_info=True)
 
+        logger.debug(f"All loaded tools: {list(loaded_tools.keys())}")
         return loaded_tools
 
     def load_tool_from_github(self, module_name, repo_url):
         """
-        Clone a tool from GitHub if it's not already present.
-
-        :param module_name: Name of the tool module.
-        :param repo_url: GitHub repository URL.
+        Clone a tool from a GitHub repository if it doesn't already exist.
         """
-        tools_dir = os.path.join(os.path.dirname(__file__), module_name)
-        if not os.path.exists(tools_dir):
+        tools_dir = os.path.join(self.base_path)
+        # This assumes the repo contains a file named `module_name.py`
+        module_path = os.path.join(tools_dir, f"{module_name}.py")
+
+        if not os.path.exists(module_path):
             try:
                 logger.info(f"Cloning tool '{module_name}' from GitHub repository '{repo_url}'.")
+                # This is a simplified clone; a real implementation might need to handle subdirectories
                 git.Repo.clone_from(repo_url, tools_dir)
+                logger.info(f"Successfully cloned '{module_name}' from GitHub.")
                 if tools_dir not in sys.path:
                     sys.path.insert(0, tools_dir)
-                logger.info(f"Successfully cloned tool '{module_name}' from GitHub.")
             except Exception as e:
-                logger.error(f"Failed to clone tool '{module_name}': {e}")
+                logger.error(f"Failed to clone tool '{module_name}': {e}", exc_info=True)
 
     def get_tool(self, tool_name):
         """
         Retrieve a loaded tool by its name.
-
-        :param tool_name: Name of the tool.
-        :return: Tool instance or None if not found.
         """
         return self.loaded_tools.get(tool_name)
-
-    def add_tool(self, tool_info):
-        """
-        Add and load a new tool dynamically.
-
-        :param tool_info: Dictionary containing tool configuration.
-        """
-        self.tools_config.append(tool_info)
-        name = tool_info.get('name')
-        module_name = tool_info.get('module')
-        class_name = tool_info.get('class', name)
-        source = tool_info.get('source', 'local')
-        config = tool_info.get('config', {})
-
-        if source == 'github':
-            repo_url = tool_info.get('repo_url')
-            if not repo_url:
-                logger.error(f"Repo URL not provided for tool '{name}'. Cannot add tool.")
-                return
-            self.load_tool_from_github(module_name, repo_url)
-
-        try:
-            module = importlib.import_module(f'TinyAGI.tools.{module_name}')
-            tool_class = getattr(module, class_name)
-            tool_instance = tool_class(config)
-            self.loaded_tools[name] = tool_instance
-            logger.info(f"Added and loaded new tool: {name}")
-        except Exception as e:
-            logger.error(f"Failed to add tool '{name}': {e}")
-
-    def remove_tool(self, tool_name):
-        """
-        Remove a loaded tool by its name.
-
-        :param tool_name: Name of the tool to remove.
-        """
-        if tool_name in self.loaded_tools:
-            del self.loaded_tools[tool_name]
-            logger.info(f"Removed tool: {tool_name}")
-        else:
-            logger.warning(f"Attempted to remove non-existent tool: {tool_name}")
 
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
