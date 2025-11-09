@@ -13,19 +13,22 @@ from .agents.agent_manager import AgentManager
 from .tools.tool_manager import ToolManager
 from .utils import load_json, setup_logging, download_nltk_resources
 from .config_validator import validate_config
-from typing import List, Union
+from typing import List, Union, Optional
+import os
 
 logger = logging.getLogger(__name__)
 
 class AgentSystem:
-    def __init__(self, config_files: Union[str, List[str]]):
+    def __init__(self, config_files: Union[str, List[str]], base_path: Optional[str] = None):
         """
         Initialize the AgentSystem with configuration, agent manager, plugin manager, and tool manager.
 
         :param config_files: Path(s) to the JSON configuration file(s).
+        :param base_path: The base path for resolving local modules. Defaults to the project root.
         """
         setup_logging()
         download_nltk_resources()
+        self.base_path = base_path or os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         self.config = self.load_and_merge_configs(config_files)
 
         # Validate the merged configuration
@@ -33,7 +36,7 @@ class AgentSystem:
             raise ValueError("Configuration validation failed. Please check your config file(s).")
 
         self.module_manager = ModuleManager(self.config.get('modules', []))
-        self.agent_manager = AgentManager(self.config.get('agents', []), self.module_manager)
+        self.agent_manager = AgentManager(self.config.get('agents', []), self.module_manager, self.base_path)
         self.plugin_manager = PluginManager(self.config.get('plugins', []))
         self.tool_manager = ToolManager(self.config.get('tools', []))
         self.task_manager = TaskManager(

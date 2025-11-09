@@ -32,10 +32,10 @@ def create_app():
             # We can let the app start and fail on requests, or exit here.
             # For a web UI, it's better to let it start and show an error.
             app.agent_system = None
-        app.config['AGENT_CONFIG'] = agent_system.config
-        app.plugin_manager = agent_system.plugin_manager
-        app.task_manager = agent_system.task_manager
-        app.tool_manager = agent_system.tool_manager
+        app.config['AGENT_CONFIG'] = agent_system.config if app.agent_system else {}
+        app.plugin_manager = agent_system.plugin_manager if app.agent_system else None
+        app.task_manager = agent_system.task_manager if app.agent_system else None
+        app.tool_manager = agent_system.tool_manager if app.agent_system else None
         logger.info("AgentSystem initialized and attached to Flask app.")
 
     # Initial setup
