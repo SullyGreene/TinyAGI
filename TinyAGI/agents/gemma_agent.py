@@ -41,6 +41,43 @@ class GemmaAgent(BaseAgent):
         self.model = genai.GenerativeModel(self.model_name)
         logger.info(f"GemmaAgent initialized with model: {self.model_name}")
 
+    def _format_chat_history(self, messages):
+        """
+        Formats a list of message dictionaries into a single string prompt
+        or a list suitable for the model's chat history.
+
+        :param messages: A list of dictionaries, e.g., [{"role": "user", "content": "Hello"}]
+        :return: A formatted string or list for the model.
+        """
+        # For Gemma via Gemini API, we can pass the history directly.
+        # We need to map 'assistant' role to 'model'.
+        history = []
+        for message in messages:
+            role = message.get("role")
+            content = message.get("content")
+            if role and content:
+                # The Gemini API expects the role to be 'user' or 'model'
+                mapped_role = "model" if role == "assistant" else role
+                history.append({"role": mapped_role, "parts": [content]})
+        
+        # The last message is the current prompt, so we separate it.
+        if history and history[-1]["role"] == "user":
+            current_prompt = history.pop()["parts"][0]
+            return current_prompt, history
+        elif history and history[-1]["role"] == "model":
+             # This case is odd (ending on assistant message), but we can handle it.
+             return "What is your response?", history
+        
+        return "Hello", [] # Default if messages is empty or malformed
+
+    def chat(self, messages, stream=False, **kwargs):
+        """
+        Handles a chat conversation with history.
+        """
+        prompt, history = self._format_chat_history(messages)
+        self.model._history = history # Set the history on the model instance
+        return self.generate_text(prompt, stream=stream, **kwargs)
+
     def generate_text(self, prompt, stream=False, system_prompt=None):
         try:
             model = self.model
