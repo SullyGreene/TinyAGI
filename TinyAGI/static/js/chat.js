@@ -1,17 +1,18 @@
 // TinyAGI/static/js/chat.js
 
+import { showToast } from './toast.js';
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { streamChat, fetchConversations, fetchConversationMessages } from './api.js';
+import { streamChat, fetchConversationMessages, getConversations, deleteConversation } from './api.js';
 import { 
-    populateConversationHistory, 
-    setActiveConversation,
+    setActiveConversation, // This is now defined in ui.js
     addMessageToUI,
     showThinkingIndicator,
     updateAssistantMessage,
     setFormDisabled,
     clearChatWindow,
     toggleStopButton,
-    checkWelcomeScreen
+    checkWelcomeScreen,
+    populateConversationHistory
 } from './ui.js';
 
 let messages = [];
@@ -26,7 +27,7 @@ function adjustTextareaHeight(textarea) {
 async function loadConversations() {
     const conversationHistoryContainer = document.getElementById('conversation-history-container');
     try {
-        const conversations = await fetchConversations();
+        const conversations = await getConversations();
         populateConversationHistory(conversations, currentConversationId);
     } catch (error) {
         console.error("Could not load conversations:", error);
@@ -140,23 +141,36 @@ function handleStop() {
 }
 
 async function handleConversationClick(event) {
-    const conversationItem = event.target.closest('.conversation-item');
-    if (!conversationItem) return;
+    const target = event.target;
+    const conversationItem = target.closest('.conversation-item');
 
-    const conversationId = parseInt(conversationItem.dataset.id, 10);
-    if (isNaN(conversationId) || conversationId === currentConversationId) return;
-
-    try {
-        const conversation = await fetchConversationMessages(conversationId);
-        clearChatWindow();
-        messages = conversation.messages;
-        messages.forEach(msg => addMessageToUI(msg.role, msg.content));
-        currentConversationId = conversation.id;
-        setActiveConversation(conversation.id);
-        checkWelcomeScreen();
-    } catch (error) {
-        console.error(`Failed to load conversation ${conversationId}:`, error);
-        alert(`Error: ${error.message}`);
+    if (target.classList.contains('delete-conversation-btn')) {
+        const convId = parseInt(conversationItem.dataset.id, 10);
+        if (confirm('Are you sure you want to delete this conversation?')) {
+            try {
+                await deleteConversation(convId);
+                showToast('Conversation deleted.', 'success');
+                if (currentConversationId === convId) handleClearChat();
+                loadConversations();
+            } catch (error) {
+                showToast(`Error deleting conversation: ${error.message}`, 'error');
+            }
+        }
+    } else if (conversationItem) {
+        const conversationId = parseInt(conversationItem.dataset.id, 10);
+        if (isNaN(conversationId) || conversationId === currentConversationId) return;
+        try {
+            const conversation = await fetchConversationMessages(conversationId);
+            clearChatWindow();
+            messages = conversation.messages;
+            messages.forEach(msg => addMessageToUI(msg.role, marked.parse(msg.content)));
+            currentConversationId = conversation.id;
+            setActiveConversation(conversation.id);
+            checkWelcomeScreen();
+        } catch (error) {
+            console.error(`Failed to load conversation ${conversationId}:`, error);
+            showToast(`Error: ${error.message}`, 'error');
+        }
     }
 }
 
@@ -170,7 +184,7 @@ function handleCopyClick(event) {
     const textToCopy = preElement ? preElement.querySelector('code').innerText : contentDiv.dataset.rawText;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
-        button.textContent = 'Copied!';
+        button.textContent = 'Copied';
         setTimeout(() => {
             button.textContent = 'Copy';
         }, 2000);
@@ -187,7 +201,7 @@ export function initializeChat() {
 
     sendButton.addEventListener('click', handleSend);
     clearChatButton.addEventListener('click', handleClearChat);
-    stopButton.addEventListener('click', handleStop);
+    if (stopButton) stopButton.addEventListener('click', handleStop);
     conversationHistoryContainer.addEventListener('click', handleConversationClick);
     chatWindow.addEventListener('click', handleCopyClick);
 

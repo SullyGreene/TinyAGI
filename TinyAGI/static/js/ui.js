@@ -19,6 +19,7 @@ const maxTokensValue = document.getElementById('max-tokens-value');
 const systemPromptTextarea = document.getElementById('system-prompt');
 const themeToggleButton = document.getElementById('theme-toggle-button');
 const sidebarToggleButton = document.getElementById('sidebar-toggle');
+const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
 
 const THEME_KEY = 'tinyagi_theme';
@@ -60,7 +61,6 @@ const SIDEBAR_STATE_KEY = 'tinyagi_sidebar_state';
  * Applies the saved sidebar state from localStorage or defaults to 'expanded'.
  */
 export function applySidebarState() {
-    const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
     const savedState = localStorage.getItem(SIDEBAR_STATE_KEY) || 'expanded';
@@ -72,7 +72,6 @@ export function applySidebarState() {
  * Toggles the sidebar state between 'expanded' and 'collapsed'.
  */
 export function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
     const isExpanded = sidebar.classList.contains('expanded');
@@ -105,7 +104,7 @@ function updateSidebarIcon(state) {
 // Add event listener for the overlay
 if (sidebarOverlay) {
     sidebarOverlay.addEventListener('click', () => {
-        if (document.getElementById('sidebar').classList.contains('expanded')) {
+        if (sidebar.classList.contains('expanded')) {
             toggleSidebar();
         }
     });
@@ -151,50 +150,6 @@ export function populateModeSelector(modes) {
 }
 
 /**
- * Populates the agent management list.
- * @param {string[]} agentNames - An array of agent names.
- * @param {string} activeAgentName - The name of the currently selected agent.
- */
-export function populateAgentManagerList(agentNames, activeAgentName) {
-    const container = document.getElementById('agent-list-container');
-    if (!container) return;
-    container.innerHTML = ''; // Clear previous list
-    
-    agentNames.forEach(agentName => {
-        const agentItem = document.createElement('div');
-        agentItem.className = 'agent-item';
-        if (agentName === activeAgentName) {
-            agentItem.classList.add('active');
-        }
-        agentItem.dataset.agentName = agentName;
-        
-        const agentNameSpan = document.createElement('div');
-        agentNameSpan.textContent = agentName;
-        agentNameSpan.className = 'agent-name-selectable';
-        
-        const agentActions = document.createElement('div');
-        agentActions.className = 'agent-item-actions';
-        
-        const editButton = document.createElement('button');
-        editButton.textContent = 'Edit';
-        editButton.className = 'button-secondary agent-edit-button';
-        editButton.dataset.agentName = agentName;
-        
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Delete';
-        deleteButton.className = 'button-danger agent-delete-button';
-        deleteButton.dataset.agentName = agentName;
-        
-        agentActions.appendChild(editButton);
-        agentActions.appendChild(deleteButton);
-        
-        agentItem.appendChild(agentNameSpan);
-        agentItem.appendChild(agentActions);
-        container.appendChild(agentItem);
-    });
-}
-
-/**
  * Handles errors during agent loading.
  */
 export function handleAgentError() {
@@ -206,13 +161,12 @@ export function handleAgentError() {
  * @param {'user' | 'assistant'} role - The role of the message sender.
  * @param {string} content - The message content.
  */
-export function addMessage(role, content) {
+export function addMessageToUI(role, content) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'content';
-    contentDiv.dataset.rawText = content; // Store raw text for copying
 
     // For user messages, we just set text content to avoid any HTML injection.
     // For assistant messages, we will parse markdown.
@@ -221,11 +175,13 @@ export function addMessage(role, content) {
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-button';
         copyButton.textContent = 'Copy';
+        contentDiv.dataset.rawText = content; // Store raw text for copying
         contentDiv.appendChild(copyButton);
     } else {
         // For assistant, we can put a placeholder or leave it empty,
         // as it will be populated by the streaming update function.
         contentDiv.innerHTML = content;
+        // Raw text for assistant messages is added during update.
     }
     
     messageDiv.appendChild(contentDiv);
@@ -271,6 +227,7 @@ export function updateAssistantMessage(contentDiv, fullResponseHtml) {
     // For production apps with external sources, use a sanitizer like DOMPurify.
     contentDiv.innerHTML = fullResponseHtml;
     chatWindow.scrollTop = chatWindow.scrollHeight;
+    contentDiv.dataset.rawText = contentDiv.innerText; // Update raw text for copying
 
     // Find all <pre> elements and add a copy button and apply highlighting
     contentDiv.querySelectorAll('pre').forEach((preElement) => {
@@ -284,7 +241,7 @@ export function updateAssistantMessage(contentDiv, fullResponseHtml) {
         // Apply syntax highlighting
         const codeBlock = preElement.querySelector('code');
         if (codeBlock && !codeBlock.classList.contains('hljs')) {
-            hljs.highlightElement(codeBlock);
+            window.hljs.highlightElement(codeBlock);
         }
     });
 }
@@ -302,7 +259,13 @@ export function setFormDisabled(disabled) {
  * Clears all messages from the chat window.
  */
 export function clearChatWindow() {
-    chatWindow.innerHTML = '';
+    const chatWindowInner = document.getElementById('chat-window-inner');
+    chatWindowInner.innerHTML = `
+        <div id="welcome-screen">
+            <div class="welcome-logo">🚀</div>
+            <h1>Welcome to TinyAGI</h1>
+            <p>Select an agent from the sidebar to begin.</p>
+        </div>`;
 }
 
 /**
@@ -315,348 +278,62 @@ export function toggleStopButton(isGenerating) {
 }
 
 /**
- * Opens or closes the settings modal.
- * @param {boolean} show - True to show the modal, false to hide it.
+ * Hides the welcome screen if it's visible.
  */
-export function toggleSettingsModal(show) {
-    if (settingsModal) {
-        settingsModal.style.display = show ? 'flex' : 'none';
+export function checkWelcomeScreen() {
+    const welcomeScreen = document.getElementById('welcome-screen');
+    if (welcomeScreen) {
+        welcomeScreen.style.display = 'none';
     }
 }
 
 /**
- * Opens or closes the agent management modal.
- * @param {boolean} show - True to show the modal, false to hide it.
+ * Sets the active conversation in the history list.
+ * @param {number | null} conversationId - The ID of the conversation to mark as active.
  */
-export function toggleAgentModal(show) {
-    if (agentModal) {
-        agentModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Opens or closes the edit agent modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleEditAgentModal(show) {
-    if (editAgentModal) {
-        editAgentModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Populates the edit agent form with the agent's details.
- * @param {object} agentDetails - The agent's configuration object.
- */
-export function populateEditAgentForm(agentDetails) {
-    const nameTitle = document.getElementById('edit-agent-name-title');
-    const originalNameInput = document.getElementById('edit-agent-original-name');
-    const descriptionInput = document.getElementById('edit-agent-description');
-    const modelInput = document.getElementById('edit-agent-model');
-    const systemPromptTextarea = document.getElementById('edit-agent-system-prompt');
-
-    if (nameTitle) nameTitle.textContent = agentDetails.name;
-    if (originalNameInput) originalNameInput.value = agentDetails.name;
-
-    // Use empty string as fallback for optional fields
-    if (descriptionInput) descriptionInput.value = agentDetails.description || '';
-    if (systemPromptTextarea) systemPromptTextarea.value = agentDetails.system_prompt || '';
-
-    // The 'model' can be in different places depending on the agent type
-    let modelName = '';
-    if (agentDetails.model) modelName = agentDetails.model;
-    else if (agentDetails.config && agentDetails.config.generation_model) modelName = agentDetails.config.generation_model;
-    if (modelInput) modelInput.value = modelName;
-}
-
-/**
- * Opens or closes the create agent modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleCreateAgentModal(show) {
-    if (createAgentModal) {
-        createAgentModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Opens or closes the image studio modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleImageStudioModal(show) {
-    if (imageStudioModal) {
-        imageStudioModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Opens or closes the IDE studio modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleIDEStudioModal(show) {
-    if (ideStudioModal) {
-        ideStudioModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Opens or closes the robotics studio modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleRoboticsStudioModal(show) {
-    if (roboticsStudioModal) {
-        roboticsStudioModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Opens or closes the music studio modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleMusicStudioModal(show) {
-    if (musicStudioModal) {
-        musicStudioModal.style.display = show ? 'flex' : 'none';
-    }
-}
-/**
- * Opens or closes the video studio modal.
- * @param {boolean} show - True to show the modal, false to hide it.
- */
-export function toggleVideoStudioModal(show) {
-    if (videoStudioModal) {
-        videoStudioModal.style.display = show ? 'flex' : 'none';
-    }
-}
-
-/**
- * Populates the image agent selection dropdown.
- * @param {string[]} agentNames - An array of image-capable agent names.
- */
-export function populateImageAgentSelector(agentNames) {
-    const imageAgentSelect = document.getElementById('image-agent-select');
-    if (!imageAgentSelect) return;
-
-    imageAgentSelect.innerHTML = '';
-    if (agentNames.length === 0) {
-        imageAgentSelect.innerHTML = '<option>No image agents found</option>';
-        imageAgentSelect.disabled = true;
-    } else {
-        agentNames.forEach(agentName => {
-            const option = document.createElement('option');
-            option.value = agentName;
-            option.textContent = agentName;
-            imageAgentSelect.appendChild(option);
-        });
-        imageAgentSelect.disabled = false;
-    }
-}
-
-/**
- * Displays a spinner in the image results panel.
- * @param {HTMLElement} panel - The panel to display the spinner in.
- */
-export function showImageGenerationSpinner(panel) {
-    panel.innerHTML = `<div class="typing-indicator" style="margin: auto;"><span></span><span></span><span></span></div>`;
-}
-
-/**
- * Displays the generated images in the results panel.
- * @param {HTMLElement} panel - The panel to display images in.
- * @param {string[]} imagesBase64 - An array of base64 encoded image strings.
- */
-export function displayGeneratedImages(panel, imagesBase64) {
-    panel.innerHTML = '';
-    imagesBase64.forEach(base64String => {
-        const img = document.createElement('img');
-        img.src = `data:image/png;base64,${base64String}`;
-        img.style.width = '100%';
-        img.style.height = 'auto';
-        img.style.borderRadius = '8px';
-        panel.appendChild(img);
+export function setActiveConversation(conversationId) {
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    conversationItems.forEach(item => {
+        item.classList.remove('active');
+        if (parseInt(item.dataset.id, 10) === conversationId) {
+            item.classList.add('active');
+        }
     });
 }
 
 /**
- * Populates the video agent selection dropdown.
- * @param {string[]} agentNames - An array of video-capable agent names.
+ * Populates the conversation history list in the sidebar.
+ * @param {object[]} conversations - An array of conversation objects.
+ * @param {number | null} activeConversationId - The ID of the currently active conversation.
  */
-export function populateVideoAgentSelector(agentNames) {
-    const videoAgentSelect = document.getElementById('video-agent-select');
-    if (!videoAgentSelect) return;
+export function populateConversationHistory(conversations, activeConversationId) {
+    const container = document.getElementById('conversation-history-container');
+    if (!container) return;
+    container.innerHTML = ''; // Clear previous list
 
-    videoAgentSelect.innerHTML = '';
-    if (agentNames.length === 0) {
-        videoAgentSelect.innerHTML = '<option>No video agents found</option>';
-        videoAgentSelect.disabled = true;
-    } else {
-        agentNames.forEach(agentName => {
-            const option = document.createElement('option');
-            option.value = agentName;
-            option.textContent = agentName;
-            videoAgentSelect.appendChild(option);
-        });
-        videoAgentSelect.disabled = false;
+    if (conversations.length === 0) {
+        container.innerHTML = '<p class="history-empty-text">No chat history yet.</p>';
+        return;
     }
-}
 
-/**
- * Displays a spinner in the video result container.
- * @param {HTMLElement} container - The container to display the spinner in.
- */
-export function showVideoGenerationSpinner(container) {
-    container.innerHTML = `<div style="text-align: center; padding: 2rem;">
-        <div class="typing-indicator" style="margin: auto;"><span></span><span></span><span></span></div>
-        <p style="margin-top: 1rem; color: var(--text-secondary);">Generating video... This may take several minutes.</p>
-    </div>`;
-}
-
-/**
- * Displays the generated video in the result container.
- * @param {HTMLElement} container - The container to display the video in.
- * @param {string} videoUrl - The URL of the generated video.
- */
-export function displayVideoResult(container, videoUrl) {
-    container.innerHTML = `<video controls autoplay loop style="width: 100%; border-radius: 8px;">
-        <source src="${videoUrl}" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>`;
-}
-
-/**
- * Populates the robotics agent selection dropdown.
- * @param {string[]} agentNames - An array of robotics-capable agent names.
- */
-export function populateRoboticsAgentSelector(agentNames) {
-    const roboticsAgentSelect = document.getElementById('robotics-agent-select');
-    if (!roboticsAgentSelect) return;
-
-    roboticsAgentSelect.innerHTML = '';
-    if (agentNames.length === 0) {
-        roboticsAgentSelect.innerHTML = '<option>No robotics agents found</option>';
-        roboticsAgentSelect.disabled = true;
-    } else {
-        agentNames.forEach(agentName => {
-            const option = document.createElement('option');
-            option.value = agentName;
-            option.textContent = agentName;
-            roboticsAgentSelect.appendChild(option);
-        });
-        roboticsAgentSelect.disabled = false;
-    }
-}
-
-/**
- * Displays a spinner in the robotics results panel.
- * @param {HTMLElement} panel - The panel to display the spinner in.
- */
-export function showRoboticsSpinner(panel) {
-    panel.innerHTML = `<div class="typing-indicator" style="margin: auto;"><span></span><span></span><span></span></div>`;
-}
-
-/**
- * Displays the robotics processing result.
- * @param {HTMLElement} panel - The panel to display the result in.
- * @param {File} imageFile - The uploaded image file.
- * @param {string} resultJsonString - The JSON string result from the agent.
- */
-export function displayRoboticsResult(panel, imageFile, resultJsonString) {
-    panel.innerHTML = '';
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const rawJsonPre = document.createElement('pre');
-    rawJsonPre.style.gridColumn = '1 / -1'; // Span full width
-    rawJsonPre.style.whiteSpace = 'pre-wrap';
-    rawJsonPre.style.wordBreak = 'break-all';
-
-    const img = new Image();
-    img.onload = () => {
-        // Set canvas size to image size
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.style.maxWidth = '100%';
-        canvas.style.height = 'auto';
-        ctx.drawImage(img, 0, 0);
-
-        try {
-            const results = JSON.parse(resultJsonString);
-            rawJsonPre.textContent = JSON.stringify(results, null, 2);
-
-            results.forEach(item => {
-                if (item.point) {
-                    const [y, x] = item.point;
-                    const canvasX = (x / 1000) * canvas.width;
-                    const canvasY = (y / 1000) * canvas.height;
-
-                    // Draw a circle
-                    ctx.beginPath();
-                    ctx.arc(canvasX, canvasY, 10, 0, 2 * Math.PI, false);
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                    ctx.fill();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = '#fff';
-                    ctx.stroke();
-                }
-            });
-        } catch (e) {
-            rawJsonPre.textContent = `Error parsing JSON: ${e.message}\n\nRaw output:\n${resultJsonString}`;
+    conversations.forEach(conv => {
+        const item = document.createElement('div');
+        item.className = 'conversation-item';
+        item.dataset.id = conv.id;
+        if (conv.id === activeConversationId) {
+            item.classList.add('active');
         }
-        panel.appendChild(canvas);
-        panel.appendChild(rawJsonPre);
-    };
-    img.src = URL.createObjectURL(imageFile);
-}
 
-/**
- * Updates the status message in the music studio.
- * @param {string} text - The message to display.
- * @param {boolean} isError - Whether the message is an error.
- */
-export function updateMusicStatus(text, isError = false) {
-    const statusEl = document.getElementById('music-status');
-    if (statusEl) {
-        statusEl.textContent = text;
-        statusEl.style.color = isError ? 'var(--accent-danger)' : 'var(--text-secondary)';
-    }
-}
+        const title = document.createElement('span');
+        title.textContent = conv.title;
 
-/**
- * Updates the displayed value for the temperature slider.
- */
-export function updateTemperatureDisplay() {
-    if (temperatureValue && temperatureSlider) {
-        temperatureValue.textContent = parseFloat(temperatureSlider.value).toFixed(1);
-    }
-}
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-conversation-btn';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.title = 'Delete conversation';
 
-/**
- * Sets the value of the temperature slider.
- * @param {number} value - The value to set.
- */
-export function setTemperatureValue(value) {
-    if (temperatureSlider) temperatureSlider.value = value;
-}
-
-/**
- * Updates the displayed value for the max tokens slider.
- */
-export function updateMaxTokensDisplay() {
-    if (maxTokensValue && maxTokensSlider) {
-        maxTokensValue.textContent = maxTokensSlider.value;
-    }
-}
-
-/**
- * Sets the value of the max tokens slider.
- * @param {number} value - The value to set.
- */
-export function setMaxTokensValue(value) {
-    if (maxTokensSlider) maxTokensSlider.value = value;
-}
-
-/**
- * Sets the value of the system prompt textarea.
- * @param {string} text - The text to set.
- */
-export function setSystemPrompt(text) {
-    if (systemPromptTextarea) systemPromptTextarea.value = text;
+        item.appendChild(title);
+        item.appendChild(deleteBtn);
+        container.appendChild(item);
+    });
 }

@@ -7,6 +7,7 @@
 import time
 import uuid
 
+from .database import db, Conversation, Message
 from flask import Flask, request, jsonify, Response, render_template
 from flask_socketio import SocketIO, emit
 import asyncio
@@ -47,6 +48,10 @@ def create_app():
     static_folder = os.path.join(project_root, 'static') # This should point to TinyAGI/static
 
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(project_root, 'tinyagi.db')}"
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+
     socketio = SocketIO(app, async_mode='threading')
 
     setup_rich_logging()
@@ -70,6 +75,7 @@ def create_app():
 
     # Initial setup
     with app.app_context():
+        db.create_all()
         initialize_agent_system()
 
     @app.route('/')
@@ -84,6 +90,23 @@ def create_app():
             return jsonify({'error': 'AgentSystem not initialized'}), 500
         agents = list(app.agent_system.agent_manager.loaded_agents.keys())
         return jsonify(agents)
+
+    @app.route('/api/models', methods=['GET'])
+    def get_models():
+        """Endpoint to get lists of common models for different providers."""
+        # This can be expanded or moved to a config file
+        models = {
+            "gemini": [
+                "gemini-1.5-pro-latest",
+                "gemini-1.5-flash-latest",
+                "gemini-1.0-pro",
+            ],
+            "openai": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"],
+            "ollama": ["llama3", "gemma:2b", "mistral"],
+            "huggingface": ["distilgpt2", "gpt2"]
+        }
+        provider = request.args.get('provider')
+        return jsonify(models.get(provider, [])) if provider else jsonify(models)
 
     @app.route('/api/agents', methods=['POST'])
     def create_agent():
@@ -220,6 +243,7 @@ def create_app():
         data = request.get_json()
         messages = data.get('messages')
         agent_name = data.get('agent')
+        conversation_id = data.get('conversation_id')
         stream = data.get('stream', False)
         settings = data.get('settings', {})  # Get settings, default to empty dict
         mode = data.get('mode')
@@ -235,13 +259,45 @@ def create_app():
         if not agent:
             return jsonify({'error': f"Agent '{agent_name}' not found"}), 404
 
+        conversation = None
+        if conversation_id:
+            conversation = db.session.get(Conversation, conversation_id)
+        
+        if not conversation:
+            # Create a new conversation
+            user_prompt = messages[-1]['content']
+            title = (user_prompt[:40] + '...') if len(user_prompt) > 40 else user_prompt
+            conversation = Conversation(title=title)
+            db.session.add(conversation)
+            db.session.commit() # Commit to get the ID
+            conversation_id = conversation.id
+
+        # Save user message
+        user_message_data = messages[-1]
+        db.session.add(Message(
+            conversation_id=conversation_id,
+            role=user_message_data['role'],
+            content=user_message_data['content']
+        ))
+        db.session.commit()
+
         try:
             # Pass the entire conversation history to the agent's chat method.
             # Also, unpack the settings dictionary as keyword arguments.
             if stream:
                 def generate():
+                    # Send conversation ID first if it's a new chat
+                    if not data.get('conversation_id'):
+                        yield f"conversation_id:{conversation_id}\n"
+
+                    full_response = ""
                     for chunk in agent.chat(messages, stream=True, mode=mode, **settings):
+                        full_response += chunk
                         yield chunk
+                    
+                    db.session.add(Message(conversation_id=conversation_id, role='assistant', content=full_response))
+                    db.session.commit()
+
                 return Response(generate(), mimetype='text/plain')
             else:
                 generated_text = agent.chat(messages, mode=mode, **settings)
@@ -445,6 +501,35 @@ def create_app():
         except Exception as e:
             logger.error(f"Error during embedding: {e}")
             return jsonify({'error': str(e)}), 500
+
+    # --- Conversation History API ---
+
+    @app.route('/api/conversations', methods=['GET'])
+    def get_conversations():
+        """Endpoint to get the list of all conversations."""
+        conversations = db.session.execute(db.select(Conversation).order_by(Conversation.created_at.desc())).scalars().all()
+        return jsonify([conv.to_dict() for conv in conversations])
+
+    @app.route('/api/conversations/<int:conv_id>', methods=['GET'])
+    def get_conversation_messages(conv_id):
+        """Endpoint to get all messages for a specific conversation."""
+        conversation = db.session.get(Conversation, conv_id)
+        if not conversation:
+            return jsonify({'error': 'Conversation not found'}), 404
+        
+        response = conversation.to_dict()
+        response['messages'] = [msg.to_dict() for msg in conversation.messages]
+        return jsonify(response)
+
+    @app.route('/api/conversations/<int:conv_id>', methods=['DELETE'])
+    def delete_conversation(conv_id):
+        """Endpoint to delete a conversation."""
+        conversation = db.session.get(Conversation, conv_id)
+        if conversation:
+            db.session.delete(conversation)
+            db.session.commit()
+            return jsonify({'message': 'Conversation deleted successfully'}), 200
+        return jsonify({'error': 'Conversation not found'}), 404
 
     # --- Music Generation Socket.IO Handlers ---
 

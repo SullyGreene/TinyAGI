@@ -1,0 +1,42 @@
+/* TinyAGI Web UI - Toast Notification Styles */
+
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 12px 18px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast.error {
+    background-color: color-mix(in srgb, var(--accent-danger) 20%, var(--bg-secondary));
+    border-color: var(--accent-danger);
+}
+
+.toast.success {
+    background-color: color-mix(in srgb, var(--accent-success) 20%, var(--bg-secondary));
+    border-color: var(--accent-success);
+}

@@ -135,6 +135,19 @@ export async function processRoboticsImage(formData) {
 }
 
 /**
+ * Fetches a list of models for a specific provider.
+ * @param {string} provider - The provider name (e.g., 'gemini', 'ollama').
+ * @returns {Promise<string[]>} A promise that resolves to an array of model names.
+ */
+export async function fetchModels(provider) {
+    const response = await fetch(`/api/models?provider=${provider}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+/**
  * Polls the status of a video generation operation.
  * @param {string} operationName - The name of the operation to poll.
  * @returns {Promise<object>} A promise that resolves to the operation's status.
@@ -179,6 +192,17 @@ export async function streamChat(agent, messages, message, settings, mode, conve
     return response.body;
 }
 
+/**
+ * Fetches all conversations from the server.
+ * @returns {Promise<object[]>} A promise that resolves to an array of conversation objects.
+ */
+export async function getConversations() {
+    const response = await fetch('/api/conversations');
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
 /**
  * Fetches all conversations from the server.
  * @returns {Promise<object[]>} A promise that resolves to an array of conversation objects.

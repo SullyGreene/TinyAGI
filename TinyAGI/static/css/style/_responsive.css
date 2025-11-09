@@ -5,8 +5,8 @@
 /* Common breakpoint for tablets and smaller devices */
 @media (max-width: 1024px) {
     .modal-content {
-        max-width: 90vw !important;
-        max-height: 85vh !important;
+        max-width: 90vw;
+        max-height: 85vh;
     }
 
     /* Make studio modals stack vertically */
@@ -17,7 +17,7 @@
 
     #image-settings-panel,
     #robotics-settings-panel {
-        width: 100% !important;
+        width: 100%;
         border-right: none;
         padding-right: 0;
         margin-bottom: 1rem;
@@ -106,8 +106,8 @@
 
     /* --- Modals --- */
     .modal-content {
-        width: 95vw !important;
-        max-width: 95vw !important;
+        width: 95vw;
+        max-width: 95vw;
     }
 
     .modal-body {
