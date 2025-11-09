@@ -29,6 +29,7 @@ class AgentSystem:
         setup_logging()
         download_nltk_resources()
         self.base_path = base_path or os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        self.config_files = config_files if isinstance(config_files, list) else [config_files]
         self.config = self.load_and_merge_configs(config_files)
 
         # Validate the merged configuration
@@ -37,7 +38,7 @@ class AgentSystem:
 
         self.module_manager = ModuleManager(self.config.get('modules', []))
         self.agent_manager = AgentManager(self.config.get('agents', []), self.module_manager, base_path=self.base_path)
-        self.plugin_manager = PluginManager(self.config.get('plugins', []))
+        self.plugin_manager = PluginManager(self.config.get('plugins', []), base_path=self.base_path)
         self.tool_manager = ToolManager(self.config.get('tools', []), base_path=self.base_path)
         self.task_manager = TaskManager(
             self.agent_manager,

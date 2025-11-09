@@ -14,13 +14,15 @@ import sys
 logger = logging.getLogger(__name__)
 
 class PluginManager:
-    def __init__(self, plugins_config):
+    def __init__(self, plugins_config, base_path=None):
         """
         Initialize the PluginManager with the provided plugins configuration.
 
         :param plugins_config: List of plugin configurations from the JSON config
+        :param base_path: The base path for resolving local modules.
         """
         self.plugins_config = plugins_config
+        self.base_path = base_path or os.path.dirname(__file__)
         self.loaded_plugins = self.load_plugins()
 
     def load_plugins(self):
@@ -66,7 +68,7 @@ class PluginManager:
         :param module_name: Name of the plugin module
         :param repo_url: GitHub repository URL
         """
-        plugins_dir = os.path.join(os.path.dirname(__file__), 'plugins')
+        plugins_dir = os.path.join(self.base_path)
         module_path = os.path.join(plugins_dir, f"{module_name}.py")
 
         if not os.path.exists(module_path):
