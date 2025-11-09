@@ -35,7 +35,7 @@ def create_app():
     # Define paths relative to the project root to find templates and static files
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     template_folder = os.path.join(project_root, 'templates')
-    static_folder = os.path.join(project_root, 'static')
+    static_folder = os.path.join(project_root, 'static') # This should point to TinyAGI/static
 
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
@@ -83,7 +83,7 @@ def create_app():
         messages = data.get('messages')
         agent_name = data.get('agent')
         stream = data.get('stream', False)
-        settings = data.get('settings', {}) # Get settings, default to empty dict
+        settings = data.get('settings', {})  # Get settings, default to empty dict
 
         if not messages:
             return jsonify({'error': 'Messages are required'}), 400

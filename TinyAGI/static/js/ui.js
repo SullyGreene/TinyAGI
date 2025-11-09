@@ -50,6 +50,10 @@ export function addMessage(role, content) {
     // For assistant messages, we will parse markdown.
     if (role === 'user') {
         contentDiv.textContent = content;
+    } else {
+        // For assistant, we can put a placeholder or leave it empty,
+        // as it will be populated by the streaming update function.
+        contentDiv.innerHTML = content;
     }
     
     messageDiv.appendChild(contentDiv);
@@ -82,18 +86,18 @@ export function showThinkingIndicator() {
 /**
  * Updates the streaming assistant message.
  * @param {HTMLElement} contentDiv - The content element to update.
- * @param {string} fullResponse - The full response text to display.
+ * @param {string} fullResponseHtml - The full response text (already parsed as HTML) to display.
  */
-export function updateAssistantMessage(contentDiv, fullResponse) {
+export function updateAssistantMessage(contentDiv, fullResponseHtml) {
     // Remove thinking style on first update
     if (contentDiv.classList.contains('thinking')) {
         contentDiv.classList.remove('thinking');
-        contentDiv.textContent = ''; // Clear "thinking..." text
+        contentDiv.innerHTML = ''; // Clear "thinking..." indicator
     }
     // WARNING: Using innerHTML can be risky if the source is not trusted.
     // Since we control the AI, we accept this risk for rich formatting.
     // For production apps with external sources, use a sanitizer like DOMPurify.
-    contentDiv.innerHTML = marked.parse(fullResponse);
+    contentDiv.innerHTML = fullResponseHtml;
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
     // Find all <pre> elements and add a copy button and apply highlighting
@@ -107,7 +111,7 @@ export function updateAssistantMessage(contentDiv, fullResponse) {
         }
         // Apply syntax highlighting
         const codeBlock = preElement.querySelector('code');
-        if (codeBlock) {
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
             hljs.highlightElement(codeBlock);
         }
     });
@@ -134,11 +138,8 @@ export function clearChatWindow() {
  * @param {boolean} isGenerating - True if the AI is generating a response.
  */
 export function toggleStopButton(isGenerating) {
-    const inputArea = document.getElementById('input-area');
     sendButton.style.display = isGenerating ? 'none' : 'flex';
     stopButton.style.display = isGenerating ? 'flex' : 'none';
-    // Hide the text input when the stop button is visible
-    promptInput.style.display = isGenerating ? 'none' : 'flex';
 }
 
 /**
@@ -166,7 +167,6 @@ export function updateTemperatureDisplay() {
  */
 export function setTemperatureValue(value) {
     if (temperatureSlider) temperatureSlider.value = value;
-    updateTemperatureDisplay();
 }
 
 /**
@@ -183,10 +183,7 @@ export function updateMaxTokensDisplay() {
  * @param {number} value - The value to set.
  */
 export function setMaxTokensValue(value) {
-    if (maxTokensSlider) {
-        maxTokensSlider.value = value;
-    }
-    updateMaxTokensDisplay();
+    if (maxTokensSlider) maxTokensSlider.value = value;
 }
 
 /**

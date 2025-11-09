@@ -1,3 +1,4 @@
+import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
 import { fetchAgents, streamChat } from './api.js';
 import {
     populateAgentSelector,
@@ -18,21 +19,21 @@ import {
 
 const agentSelect = document.getElementById('agent-select');
 const chatWindow = document.getElementById('chat-window');
-const promptInput = document.getElementById('prompt-input');
+const promptInput = document.getElementById('prompt-input'); // This is now a textarea
 const sendButton = document.getElementById('send-button');
-const clearChatButton = document.getElementById('clear-chat-button');
+const clearChatButton = document.getElementById('new-chat-button'); // Renamed from 'clear-chat-button'
 const stopButton = document.getElementById('stop-button');
 const settingsButton = document.getElementById('settings-button');
-const closeModalButton = document.getElementById('close-modal-button');
+const closeModalButton = document.querySelector('.modal .close-button');
 const saveSettingsButton = document.getElementById('save-settings-button');
 const temperatureSlider = document.getElementById('temperature-slider');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
 const systemPromptTextarea = document.getElementById('system-prompt');
 
-const SETTINGS_KEY = 'tinyagi_settings';
+const SETTINGS_KEY = 'tinyagi_chat_settings';
 
 let messages = [];
-let abortController = null;
+let abortController = null; // To cancel fetch requests
 let settings = {
     temperature: 1.0,
     max_tokens: 4096,
@@ -40,6 +41,12 @@ let settings = {
 };
 
 
+// --- Utility Functions ---
+
+function adjustTextareaHeight(textarea) {
+    textarea.style.height = 'auto'; // Reset height
+    textarea.style.height = `${textarea.scrollHeight}px`; // Set to scroll height
+}
 
 async function loadAgents() {
     try {
@@ -50,6 +57,8 @@ async function loadAgents() {
         handleAgentError();
     }
 }
+
+// --- Core Chat Logic ---
 
 async function handleSend() {
     const prompt = promptInput.value.trim();
@@ -64,12 +73,13 @@ async function handleSend() {
     addMessage('user', prompt);
     messages.push({ role: 'user', content: prompt });
     promptInput.value = '';
+    adjustTextareaHeight(promptInput); // Reset textarea height
     setFormDisabled(true);
     toggleStopButton(true);
 
     const assistantContentDiv = showThinkingIndicator();
     let assistantResponse = '';
-
+    
     abortController = new AbortController();
 
     // Prepare messages for the API call, including the system prompt
@@ -89,7 +99,7 @@ async function handleSend() {
             if (done) break;
             const chunk = decoder.decode(value, { stream: true });
             assistantResponse += chunk;
-            updateAssistantMessage(assistantContentDiv, assistantResponse);
+            updateAssistantMessage(assistantContentDiv, marked.parse(assistantResponse));
         }
         messages.push({ role: 'assistant', content: assistantResponse });
     } catch (error) {
@@ -109,13 +119,12 @@ async function handleSend() {
     }
 }
 
+// --- Event Handlers ---
+
 function handleClearChat() {
-    // Clear the in-memory message history
     messages = [];
-    // Clear the messages from the UI
     clearChatWindow();
-    // Add a welcome message or leave it blank
-    // addMessage('assistant', 'Chat cleared. How can I help you?');
+    addMessage('assistant', 'New chat started. How can I help you?');
     console.log('Chat history cleared.');
 }
 
@@ -126,6 +135,7 @@ function handleStop() {
     }
 }
 
+// Handle clicks on dynamically added copy buttons
 function handleCopyClick(event) {
     if (!event.target.classList.contains('copy-button')) return;
 
@@ -147,6 +157,8 @@ function handleCopyClick(event) {
         console.error('Failed to copy text: ', err);
     });
 }
+
+// --- Settings Management ---
 
 function loadSettings() {
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
@@ -174,17 +186,21 @@ function saveSettings() {
 function handleSaveSettings() {
     settings.temperature = parseFloat(temperatureSlider.value);
     settings.max_tokens = parseInt(maxTokensSlider.value, 10);
-    // System prompt is saved on input, but we could re-save all here if needed.
+    settings.system_prompt = systemPromptTextarea.value;
     saveSettings();
     toggleSettingsModal(false);
 }
+
+// --- Initialization ---
 
 function initialize() {
     loadSettings(); // Load settings on startup
 
     // Set initial values in the UI from loaded settings
     setTemperatureValue(settings.temperature);
+    updateTemperatureDisplay(); // Also update the label
     setMaxTokensValue(settings.max_tokens);
+    updateMaxTokensDisplay(); // Also update the label
     setSystemPrompt(settings.system_prompt);
 
     sendButton.addEventListener('click', handleSend);
@@ -195,19 +211,21 @@ function initialize() {
     saveSettingsButton.addEventListener('click', handleSaveSettings);
     temperatureSlider.addEventListener('input', updateTemperatureDisplay);
     maxTokensSlider.addEventListener('input', updateMaxTokensDisplay);
-    systemPromptTextarea.addEventListener('input', () => {
-        settings.system_prompt = systemPromptTextarea.value;
-        saveSettings();
-    });
+    // System prompt is now saved only when the "Save" button is clicked.
 
-    promptInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleSend());
+    promptInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Prevent new line on Enter
+            handleSend();
+        }
+    });
     promptInput.addEventListener('input', () => {
-        // Only enable send if not currently streaming a response
+        adjustTextareaHeight(promptInput);
         if (!promptInput.disabled) {
             sendButton.disabled = promptInput.value.trim() === '';
         }
     });
-
+    
     // Add a single event listener to the chat window for copy buttons
     chatWindow.addEventListener('click', handleCopyClick);
 
@@ -215,3 +233,4 @@ function initialize() {
 }
 
 initialize();
+addMessage('assistant', 'Welcome to TinyAGI! Select an agent and start chatting.');
