@@ -15,19 +15,22 @@ logger = logging.getLogger(__name__)
 class OpenAIAgent(BaseAgent):
     def __init__(self, model_config, module_manager=None):
         super().__init__(model_config)
+        self.disabled = False
         api_key = os.getenv('OPENAI_API_KEY')
         if not api_key:
-            logger.error("OPENAI_API_KEY not found in environment variables.")
-            raise ValueError("OPENAI_API_KEY is required for OpenAIAgent.")
-        
-        self.client = openai.OpenAI(api_key=api_key)
-        self.model_name = self.model_config.get('model', 'gpt-5-nano')
-        logger.info(f"OpenAIAgent initialized with model: {self.model_name}")
+            logger.warning("OPENAI_API_KEY not found. OpenAIAgent will be disabled.")
+            self.disabled = True
+            self.client = None
+            self.model_name = None
+        else:
+            self.client = openai.OpenAI(api_key=api_key)
+            self.model_name = self.model_config.get('model', 'gpt-5-nano')
+            logger.info(f"OpenAIAgent initialized with model: {self.model_name}")
 
     def _format_chat_history(self, messages):
         """
         Formats a list of messages for the OpenAI Responses API.
-        Maps 'system' to 'developer' role.
+        Maps 'system' to 'developer' role if needed by the model.
         """
         history = []
         for message in messages:
@@ -35,7 +38,7 @@ class OpenAIAgent(BaseAgent):
             content = message.get("content")
             if role and content:
                 # The new API uses 'developer' for system-level instructions.
-                mapped_role = "developer" if role == "system" else role
+                mapped_role = "system" # Sticking to standard roles unless specified
                 history.append({"role": mapped_role, "content": content})
         return history
 
@@ -46,6 +49,10 @@ class OpenAIAgent(BaseAgent):
 
     def generate_text(self, messages, stream=False, **kwargs):
         """Generates text using the OpenAI model."""
+        if self.disabled:
+            error_message = "OpenAIAgent is disabled because OPENAI_API_KEY is not set."
+            return iter([error_message]) if stream else error_message
+
         try:
             mode = kwargs.pop('mode', None)
             mode_config = self.model_config.get('modes', {}).get(mode, {})
@@ -97,6 +104,10 @@ class OpenAIAgent(BaseAgent):
 
     def embed(self, input_data):
         """Generates embeddings using the OpenAI embedding models."""
+        if self.disabled:
+            logger.warning("Cannot generate embeddings: OpenAIAgent is disabled.")
+            return []
+
         # This would use client.embeddings.create, similar to gemini_agent.
         logger.warning("Embedding is not yet implemented for OpenAIAgent.")
         return []

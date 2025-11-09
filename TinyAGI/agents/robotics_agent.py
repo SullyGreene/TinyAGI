@@ -16,21 +16,26 @@ logger = logging.getLogger(__name__)
 class RoboticsAgent(BaseAgent):
     def __init__(self, model_config, module_manager=None):
         super().__init__(model_config)
+        self.disabled = False
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
-            logger.error("GEMINI_API_KEY not found in environment variables.")
-            raise ValueError("GEMINI_API_KEY is required for RoboticsAgent.")
-        
-        genai.configure(api_key=api_key)
-
-        self.model_name = self.model_config.get('model', 'gemini-robotics-er-1.5-preview')
-        self.model = genai.GenerativeModel(self.model_name)
-        logger.info(f"RoboticsAgent initialized with model: {self.model_name}")
+            logger.warning("GEMINI_API_KEY not found. RoboticsAgent will be disabled.")
+            self.disabled = True
+            self.model = None
+            self.model_name = None
+        else:
+            genai.configure(api_key=api_key)
+            self.model_name = self.model_config.get('model', 'gemini-robotics-er-1.5-preview')
+            self.model = genai.GenerativeModel(self.model_name)
+            logger.info(f"RoboticsAgent initialized with model: {self.model_name}")
 
     def process_image_with_prompt(self, image_part, prompt, **kwargs):
         """
         Processes an image with a given prompt and returns the structured output.
         """
+        if self.disabled:
+            raise Exception("RoboticsAgent is disabled because GEMINI_API_KEY is not set.")
+
         try:
             # Default config for robotics tasks
             config = types.GenerateContentConfig(
