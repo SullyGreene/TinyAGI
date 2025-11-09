@@ -83,14 +83,15 @@ export async function createAgent(agentData) {
  * @param {string} agent - The name of the agent to chat with.
  * @param {object[]} messages - The history of messages.
  * @param {object} settings - The generation settings (e.g., temperature).
+ * @param {string} mode - The selected agent mode (e.g., 'chat', 'ide').
  * @param {AbortSignal} signal - The AbortSignal to cancel the request.
  * @returns {Promise<ReadableStream>} A promise that resolves to a ReadableStream of the response.
  */
-export async function streamChat(agent, messages, settings, signal) {
+export async function streamChat(agent, messages, settings, mode, signal) {
     const response = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent, messages, stream: true, settings }),
+        body: JSON.stringify({ agent, messages, stream: true, settings, mode }),
         signal // Pass the signal to the fetch request
     });
 
