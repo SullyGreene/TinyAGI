@@ -7,73 +7,83 @@
 
 import logging
 import importlib
-from ..core.base_manager import BaseManager
+import os
+import sys
+import git  # Requires gitpython
 
 logger = logging.getLogger(__name__)
 
-class AgentManager(BaseManager):
-    def __init__(self, agents_config, module_manager, base_path):
+class AgentManager:
+    def __init__(self, agents_config, module_manager, base_path=None):
         """
-        Initialize the AgentManager with the provided agents configuration.
+        Initialize the AgentManager.
 
         :param agents_config: List of agent configurations.
         :param module_manager: Instance of ModuleManager.
-        :param base_path: The base directory for agents.
+        :param base_path: The base path for resolving local modules.
         """
-        super().__init__(
-            config_list=agents_config,
-            component_type='agent',
-            base_path=base_path,
-            import_prefix='TinyAGI.agents'
-        )
+        self.agents_config = agents_config
         self.module_manager = module_manager
-        self.loaded_components = self.load_components()
+        self.base_path = base_path or os.path.dirname(__file__)
+        self.loaded_agents = self.load_agents()
 
-    def load_components(self):
+    def load_agents(self):
         """
         Load all agents based on the configuration.
-
-        :return: Dictionary of loaded agent instances keyed by agent name.
         """
-        for agent_info in self.config_list:
+        loaded_agents = {}
+        for agent_info in self.agents_config:
             name = agent_info.get('name')
             module_name = agent_info.get('module')
-            class_name = agent_info.get('class', name)
+            class_name = agent_info.get('class')
             source = agent_info.get('source', 'local')
             config = agent_info.get('config', {})
 
-            try:
-                if source == 'github':
-                    repo_url = agent_info.get('repo_url')
-                    if not repo_url:
-                        logger.error(f"Repo URL not provided for GitHub agent '{name}'. Skipping.")
-                        continue
-                    self._load_from_github(module_name, repo_url)
-                
-                module = importlib.import_module(f'{self.import_prefix}.{module_name}')
-                agent_class = getattr(module, class_name)
-                agent_instance = agent_class(config, self.module_manager)
-                self.loaded_components[name] = agent_instance
-                logger.info(f"Loaded agent: {name}")
-            except Exception as e:
-                logger.error(f"Failed to load agent '{name}': {e}")
+            logger.info(f"Loading agent '{name}' from module '{module_name}' with source '{source}'.")
 
-        return self.loaded_components
+            if source == 'github':
+                repo_url = agent_info.get('repo_url')
+                if not repo_url:
+                    logger.error(f"Repo URL not provided for agent '{name}'. Skipping.")
+                    continue
+                self.load_agent_from_github(module_name, repo_url)
+
+            try:
+                module = importlib.import_module(f'TinyAGI.agents.{module_name}')
+                agent_class = getattr(module, class_name)
+                agent_instance = agent_class(config)
+                loaded_agents[name] = agent_instance
+                logger.info(f"Successfully loaded agent: {name}")
+            except Exception as e:
+                logger.error(f"Failed to load agent '{name}': {e}", exc_info=True)
+
+        return loaded_agents
+
+    def load_agent_from_github(self, module_name, repo_url):
+        """
+        Clone an agent from a GitHub repository if it doesn't already exist.
+        """
+        agents_dir = os.path.join(self.base_path)
+        module_path = os.path.join(agents_dir, f"{module_name}.py")
+
+        if not os.path.exists(module_path):
+            try:
+                logger.info(f"Cloning agent '{module_name}' from GitHub repository '{repo_url}'.")
+                git.Repo.clone_from(repo_url, agents_dir)
+                logger.info(f"Successfully cloned '{module_name}' from GitHub.")
+                if agents_dir not in sys.path:
+                    sys.path.insert(0, agents_dir)
+            except Exception as e:
+                logger.error(f"Failed to clone agent '{module_name}': {e}", exc_info=True)
 
     def get_agent(self, agent_name):
-        return self.get_component(agent_name)
+        """
+        Retrieve a loaded agent by its name.
+        """
+        return self.loaded_agents.get(agent_name)
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+    def get_all_agents(self):
+        """
+        Retrieve all loaded agents.
+        """
+        return self.loaded_agents
