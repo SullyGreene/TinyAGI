@@ -1,5 +1,5 @@
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent } from './api.js';
+import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages } from './api.js';
 import {
     populateModeSelector,
     populateAgentSelector,
@@ -14,6 +14,7 @@ import {
     toggleSettingsModal,
     toggleEditAgentModal,
     toggleCreateAgentModal,
+    toggleImageStudioModal,
     populateEditAgentForm,
     toggleAgentModal,
     updateTemperatureDisplay,
@@ -21,6 +22,9 @@ import {
     updateMaxTokensDisplay,
     setMaxTokensValue,
     setSystemPrompt,
+    populateImageAgentSelector,
+    displayGeneratedImages,
+    showImageGenerationSpinner,
     toggleTheme,
     applyTheme
 } from './ui.js';
@@ -41,13 +45,21 @@ const closeEditAgentModalButton = document.querySelector('#edit-agent-modal .clo
 const closeAgentModalButton = document.querySelector('#agent-modal .close-button');
 const closeModalButton = document.querySelector('.modal .close-button');
 const closeCreateAgentModalButton = document.querySelector('#create-agent-modal .close-button');
+const closeImageStudioModalButton = document.querySelector('#image-studio-modal .close-button');
 const saveAgentButton = document.getElementById('save-agent-button');
 const themeToggleButton = document.getElementById('theme-toggle-button');
+const createAgentTypeSelect = document.getElementById('create-agent-type');
 
 const saveSettingsButton = document.getElementById('save-settings-button');
 const temperatureSlider = document.getElementById('temperature-slider');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
 
+const imageStudioButton = document.getElementById('image-studio-button');
+const generateImageButton = document.getElementById('generate-image-button');
+const imageAgentSelect = document.getElementById('image-agent-select');
+const imagePrompt = document.getElementById('image-prompt');
+const imageCountSlider = document.getElementById('image-count-slider');
+const imageAspectRatioSelect = document.getElementById('image-aspect-ratio');
 const systemPromptTextarea = document.getElementById('system-prompt');
 
 const SETTINGS_KEY = 'tinyagi_chat_settings';
@@ -281,7 +293,9 @@ async function handleCreateAgent() {
     const name = document.getElementById('create-agent-name').value.trim();
     const type = document.getElementById('create-agent-type').value;
     const description = document.getElementById('create-agent-description').value;
-    const model = document.getElementById('create-agent-model').value;
+    // Handle both input and select for model name
+    const modelInput = document.getElementById('create-agent-model-input') || document.getElementById('create-agent-model-select');
+    const model = modelInput.value;
     const system_prompt = document.getElementById('create-agent-system-prompt').value;
 
     if (!name) {
@@ -300,7 +314,75 @@ async function handleCreateAgent() {
     }
 }
 
+function handleCreateAgentTypeChange() {
+    const agentType = createAgentTypeSelect.value;
+    const modelContainer = document.getElementById('create-agent-model-container');
+    
+    const geminiModels = [
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite"
+    ];
+
+    if (agentType === 'gemini') {
+        // Create a select dropdown for Gemini models
+        let selectHTML = '<select id="create-agent-model-select">';
+        geminiModels.forEach(model => {
+            selectHTML += `<option value="${model}">${model}</option>`;
+        });
+        selectHTML += '</select>';
+        modelContainer.innerHTML = selectHTML;
+    } else {
+        // Revert to a text input for other types
+        let placeholder = 'e.g., llama3, gemma:2b';
+        let defaultValue = 'llama3';
+        if (agentType === 'huggingface') {
+            placeholder = 'e.g., distilgpt2';
+            defaultValue = 'distilgpt2';
+        }
+        modelContainer.innerHTML = `<input type="text" id="create-agent-model-input" value="${defaultValue}" placeholder="${placeholder}">`;
+    }
+}
+
+function resetCreateAgentForm() {
+    document.getElementById('create-agent-name').value = '';
+    document.getElementById('create-agent-description').value = '';
+    document.getElementById('create-agent-system-prompt').value = '';
+    handleCreateAgentTypeChange(); // Reset model input based on default type
+}
 // --- Settings Management ---
+
+// --- Image Generation ---
+
+async function handleGenerateImages() {
+    const agent = imageAgentSelect.value;
+    const prompt = imagePrompt.value.trim();
+    const settings = {
+        number_of_images: parseInt(imageCountSlider.value, 10),
+        aspect_ratio: imageAspectRatioSelect.value
+    };
+
+    if (!prompt) {
+        alert('Please enter a prompt.');
+        return;
+    }
+
+    const resultsPanel = document.getElementById('image-results-panel');
+    showImageGenerationSpinner(resultsPanel);
+    generateImageButton.disabled = true;
+
+    try {
+        const result = await generateImages(agent, prompt, settings);
+        displayGeneratedImages(resultsPanel, result.images);
+    } catch (error) {
+        alert(`Error generating images: ${error.message}`);
+        resultsPanel.innerHTML = `<p style="color: var(--accent-danger);">Failed to generate images. Please check the console for details.</p>`;
+    } finally {
+        generateImageButton.disabled = false;
+    }
+}
 
 function loadSettings() {
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
@@ -355,13 +437,22 @@ function initialize() {
         populateAgentManagerList(agentsList, agentSelect.value);
         toggleAgentModal(true);
     });
-    themeToggleButton.addEventListener('click', toggleTheme);
+    createAgentTypeSelect.addEventListener('change', handleCreateAgentTypeChange);
+    createAgentButton.addEventListener('click', () => {
+        resetCreateAgentForm();
+        toggleCreateAgentModal(true);
+    });
     createAgentButton.addEventListener('click', () => toggleCreateAgentModal(true));
     confirmCreateAgentButton.addEventListener('click', handleCreateAgent);
     closeEditAgentModalButton.addEventListener('click', () => toggleEditAgentModal(false));
     closeAgentModalButton.addEventListener('click', () => toggleAgentModal(false));
     closeModalButton.addEventListener('click', () => toggleSettingsModal(false));
     saveAgentButton.addEventListener('click', handleSaveAgent);
+    imageStudioButton.addEventListener('click', () => {
+        const imageAgents = agentsList.filter(name => name.includes('imagen'));
+        populateImageAgentSelector(imageAgents);
+        toggleImageStudioModal(true);
+    });
     closeCreateAgentModalButton.addEventListener('click', () => toggleCreateAgentModal(false));
     saveSettingsButton.addEventListener('click', handleSaveSettings);
     temperatureSlider.addEventListener('input', updateTemperatureDisplay);
@@ -386,6 +477,11 @@ function initialize() {
 
     // Add event listener for agent selection in the modal
     agentListContainer.addEventListener('click', handleAgentSelection);
+
+    // Image Studio Listeners
+    generateImageButton.addEventListener('click', handleGenerateImages);
+    closeImageStudioModalButton.addEventListener('click', () => toggleImageStudioModal(false));
+    imageCountSlider.addEventListener('input', () => document.getElementById('image-count-value').textContent = imageCountSlider.value);
 
     loadAgents();
     // After loading agents, trigger the mode loading for the default selected agent

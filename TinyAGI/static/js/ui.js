@@ -7,6 +7,7 @@ const settingsModal = document.getElementById('settings-modal');
 const agentModal = document.getElementById('agent-modal');
 const editAgentModal = document.getElementById('edit-agent-modal');
 const createAgentModal = document.getElementById('create-agent-modal');
+const imageStudioModal = document.getElementById('image-studio-modal');
 const temperatureSlider = document.getElementById('temperature-slider');
 const temperatureValue = document.getElementById('temperature-value');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
@@ -308,6 +309,64 @@ export function toggleCreateAgentModal(show) {
     if (createAgentModal) {
         createAgentModal.style.display = show ? 'flex' : 'none';
     }
+}
+
+/**
+ * Opens or closes the image studio modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleImageStudioModal(show) {
+    if (imageStudioModal) {
+        imageStudioModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Populates the image agent selection dropdown.
+ * @param {string[]} agentNames - An array of image-capable agent names.
+ */
+export function populateImageAgentSelector(agentNames) {
+    const imageAgentSelect = document.getElementById('image-agent-select');
+    if (!imageAgentSelect) return;
+
+    imageAgentSelect.innerHTML = '';
+    if (agentNames.length === 0) {
+        imageAgentSelect.innerHTML = '<option>No image agents found</option>';
+        imageAgentSelect.disabled = true;
+    } else {
+        agentNames.forEach(agentName => {
+            const option = document.createElement('option');
+            option.value = agentName;
+            option.textContent = agentName;
+            imageAgentSelect.appendChild(option);
+        });
+        imageAgentSelect.disabled = false;
+    }
+}
+
+/**
+ * Displays a spinner in the image results panel.
+ * @param {HTMLElement} panel - The panel to display the spinner in.
+ */
+export function showImageGenerationSpinner(panel) {
+    panel.innerHTML = `<div class="typing-indicator" style="margin: auto;"><span></span><span></span><span></span></div>`;
+}
+
+/**
+ * Displays the generated images in the results panel.
+ * @param {HTMLElement} panel - The panel to display images in.
+ * @param {string[]} imagesBase64 - An array of base64 encoded image strings.
+ */
+export function displayGeneratedImages(panel, imagesBase64) {
+    panel.innerHTML = '';
+    imagesBase64.forEach(base64String => {
+        const img = document.createElement('img');
+        img.src = `data:image/png;base64,${base64String}`;
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.borderRadius = '8px';
+        panel.appendChild(img);
+    });
 }
 
 /**

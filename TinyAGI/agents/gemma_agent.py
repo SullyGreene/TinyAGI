@@ -111,20 +111,22 @@ class GemmaAgent(BaseAgent):
                 generation_config=genai.types.GenerationConfig(**generation_params)
             )
 
-            if not response.parts:
-                block_reason = "Unknown"
-                if hasattr(response, 'prompt_feedback'):
-                    block_reason = response.prompt_feedback.block_reason
-                logger.warning(f"Gemma response was blocked. Reason: {block_reason}.")
-                return "Response was blocked due to safety settings."
-
             if stream:
                 return (chunk.text for chunk in response)
             else:
+                # Block reason check is only safe for non-streaming responses after generation
+                if not response.parts:
+                    block_reason = "Unknown"
+                    if hasattr(response, 'prompt_feedback'):
+                        block_reason = response.prompt_feedback.block_reason
+                    logger.warning(f"Gemma response was blocked. Reason: {block_reason}.")
+                    return "Response was blocked due to safety settings."
                 return response.text
         except Exception as e:
-            logger.error(f"Error generating text with Gemma: {e}")
-            return None
+            logger.error(f"Error generating text with Gemma: {e}", exc_info=True)
+            error_message = f"An error occurred with Gemma: {e}"
+            # For a stream, return an iterator that yields the error; otherwise, return the string.
+            return iter([error_message]) if stream else error_message
 
     def embed(self, input_data):
         logger.warning("Embedding is not implemented for GemmaAgent.")

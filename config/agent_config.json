@@ -55,6 +55,18 @@
         "generation_model": "gemini-2.5-flash",
         "embedding_model": "models/embedding-001",
         "parameters": {}
+      },
+      "modes": {
+        "code_reviewer": {
+          "name": "Code Reviewer",
+          "system_prompt": "You are an expert code reviewer. Analyze the following code for bugs, style issues, and performance improvements. Provide your feedback in a clear, constructive list.",
+          "parameters": { "temperature": 0.1 }
+        },
+        "summarizer": {
+          "name": "Summarizer",
+          "system_prompt": "You are a professional summarizer. Condense the following text into a concise summary, capturing the key points and main ideas.",
+          "parameters": { "temperature": 0.5 }
+        }
       }
     },
     {
@@ -64,6 +76,15 @@
       "source": "local",
       "config": {
         "model_name": "distilgpt2"
+      }
+    },
+    {
+      "name": "imagen_agent",
+      "module": "imagen_agent",
+      "class": "ImagenAgent",
+      "source": "local",
+      "config": {
+        "model": "imagen-4.0-generate-001"
       }
     }
   ],

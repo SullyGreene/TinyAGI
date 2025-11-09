@@ -77,6 +77,26 @@ export async function createAgent(agentData) {
     return await response.json();
 }
 
+/**
+ * Sends a request to generate images.
+ * @param {string} agent - The name of the image generation agent.
+ * @param {string} prompt - The text prompt for the image.
+ * @param {object} settings - Image generation settings (e.g., aspect_ratio).
+ * @returns {Promise<object>} A promise that resolves to the server's response with image data.
+ */
+export async function generateImages(agent, prompt, settings) {
+    const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent, prompt, settings }),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
 
 /**
  * Sends a chat request to the server and returns a readable stream for the response.

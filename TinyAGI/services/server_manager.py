@@ -275,6 +275,37 @@ def create_app():
             logger.error(f"Error during text generation: {e}")
             return jsonify({'error': str(e)}), 500
 
+    @app.route('/api/generate-image', methods=['POST'])
+    def generate_image():
+        """
+        Handle image generation requests.
+        """
+        data = request.get_json()
+        prompt = data.get('prompt')
+        agent_name = data.get('agent')
+        settings = data.get('settings', {})
+
+        if not prompt:
+            return jsonify({'error': 'Prompt is required'}), 400
+        if not agent_name:
+            return jsonify({'error': 'Agent name is required'}), 400
+        if not app.agent_system:
+            return jsonify({'error': 'AgentSystem not initialized'}), 500
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent:
+            return jsonify({'error': f"Agent '{agent_name}' not found"}), 404
+        
+        if not hasattr(agent, 'generate_images'):
+            return jsonify({'error': f"Agent '{agent_name}' does not support image generation."}), 400
+
+        try:
+            images_base64 = agent.generate_images(prompt, **settings)
+            return jsonify({'images': images_base64})
+        except Exception as e:
+            logger.error(f"Error during image generation: {e}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
+
     @app.route('/embed', methods=['POST'])
     def embed():
         """

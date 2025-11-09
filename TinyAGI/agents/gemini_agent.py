@@ -97,7 +97,9 @@ class GeminiAgent(BaseAgent):
                 return response.text
         except Exception as e:
             logger.error(f"Error generating text with Gemini: {e}", exc_info=True)
-            return f"An error occurred: {e}"
+            error_message = f"An error occurred with Gemini: {e}"
+            # For a stream, return an iterator that yields the error; otherwise, return the string.
+            return iter([error_message]) if stream else error_message
 
     def embed(self, input_data):
         """Generates embeddings for the given input data."""
