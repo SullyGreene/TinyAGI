@@ -33,7 +33,7 @@ def create_app():
     :return: Configured Flask app
     """
     # Define paths relative to the project root to find templates and static files
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     template_folder = os.path.join(project_root, 'templates')
     static_folder = os.path.join(project_root, 'static')
 
