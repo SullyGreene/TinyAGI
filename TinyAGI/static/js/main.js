@@ -1,16 +1,11 @@
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages, startVideoGeneration, pollVideoOperation, processRoboticsImage } from './api.js';
+import { fetchAgents, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages, startVideoGeneration, pollVideoOperation, processRoboticsImage } from './api.js';
+import { initializeChat } from './chat.js';
 import {
     populateModeSelector,
     populateAgentSelector,
     handleAgentError,
-    addMessage,
-    showThinkingIndicator,
-    updateAssistantMessage,
-    setFormDisabled,
-    clearChatWindow,
     populateAgentManagerList,
-    toggleStopButton,
     toggleSettingsModal,
     toggleEditAgentModal,
     toggleCreateAgentModal,
@@ -44,11 +39,7 @@ import {
 
 const agentSelect = document.getElementById('agent-select');
 const modeSelect = document.getElementById('mode-select');
-const chatWindow = document.getElementById('chat-window');
 const promptInput = document.getElementById('prompt-input'); // This is now a textarea
-const sendButton = document.getElementById('send-button'); 
-const clearChatButton = document.getElementById('new-chat-button');
-const stopButton = document.getElementById('stop-button');
 const conversationHistoryContainer = document.getElementById('conversation-history-container');
 const agentListContainer = document.getElementById('agent-list-container');
 const manageAgentsButton = document.getElementById('manage-agents-button');
@@ -108,10 +99,7 @@ const ideOutputCode = document.getElementById('ide-output-code');
 
 const SETTINGS_KEY = 'tinyagi_chat_settings';
 
-let messages = [];
 let agentsList = []; // To store the list of agents
-let abortController = null; // To cancel fetch requests
-
 let musicSocket = null;
 let audioContext = null;
 let audioQueue = [];
@@ -124,11 +112,6 @@ let settings = {
 
 
 // --- Utility Functions ---
-
-function adjustTextareaHeight(textarea) {
-    textarea.style.height = 'auto'; // Reset height
-    textarea.style.height = `${textarea.scrollHeight}px`; // Set to scroll height
-}
 
 async function loadAgents() {
     try {
@@ -152,163 +135,7 @@ async function handleAgentChange(agentName) {
     }
 }
 
-function checkWelcomeScreen() {
-    const welcomeScreen = document.getElementById('welcome-screen');
-    if (!welcomeScreen) return;
-    welcomeScreen.style.display = messages.length === 0 ? 'flex' : 'none';
-}
-
-// --- Core Chat Logic ---
-
-async function handleSend() {
-    const prompt = promptInput.value.trim();
-    if (!prompt) return;
-
-    const selectedAgent = agentSelect.value;
-    const selectedMode = modeSelect.value;
-    if (!selectedAgent || selectedAgent === 'Error loading agents') {
-        alert('Please select a valid agent.');
-        return;
-    }
-
-    checkWelcomeScreen(); // Hide welcome screen on first message
-    addMessage('user', prompt);
-    messages.push({ role: 'user', content: prompt });
-    promptInput.value = '';
-    adjustTextareaHeight(promptInput); // Reset textarea height
-    setFormDisabled(true);
-    toggleStopButton(true);
-
-    const assistantContentDiv = showThinkingIndicator();
-    let assistantResponse = '';
-    
-    abortController = new AbortController();
-
-    // Prepare messages for the API call, including the system prompt
-    const systemPrompt = systemPromptTextarea.value.trim();
-    const messagesToSend = [...messages];
-    if (systemPrompt) {
-        messagesToSend.unshift({ role: 'system', content: systemPrompt });
-    }
-
-    try {
-        const stream = await streamChat(selectedAgent, messagesForContext, userMessage, settings, selectedMode, currentConversationId, abortController.signal);
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-
-            // If we haven't found the conversation ID yet, look for it.
-            if (currentConversationId === null) {
-                const idMatch = buffer.match(/^conversation_id:(\d+)\n/);
-                if (idMatch) {
-                    const newId = parseInt(idMatch[1], 10);
-                    if (!isNaN(newId)) {
-                        currentConversationId = newId;
-                        console.log(`Started new conversation: ${currentConversationId}`);
-                        // Remove the ID line from the buffer
-                        buffer = buffer.substring(idMatch[0].length);
-                        // Refresh the conversation list in the background
-                        loadConversations();
-                    }
-                }
-            }
-
-            // Update the UI with the content we have so far.
-            // This check ensures we don't render the conversation_id line.
-            if (buffer) {
-                assistantResponse += buffer;
-                updateAssistantMessage(assistantContentDiv, marked.parse(assistantResponse));
-                buffer = ''; // Clear buffer after rendering
-            }
-        }
-        messages.push({ role: 'assistant', content: assistantResponse });
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('Stream generation stopped by user.');
-            updateAssistantMessage(assistantContentDiv, assistantResponse + ' [Stopped]');
-            messages.push({ role: 'assistant', content: assistantResponse + ' [Stopped]'});
-        } else {
-            console.error('Error sending message:', error);
-            updateAssistantMessage(assistantContentDiv, `**Error:**\n\nSorry, an error occurred: ${error.message}`);
-            assistantContentDiv.classList.add('error-message');
-        }
-    } finally {
-        setFormDisabled(false);
-        toggleStopButton(false);
-        promptInput.focus();
-        abortController = null;
-    }
-}
-
 // --- Event Handlers ---
-
-function handleCopyClick(event) {
-    if (!event.target.classList.contains('copy-button')) return;
-
-    const button = event.target;
-    const contentDiv = button.closest('.content');
-    if (!contentDiv) return;
-
-    // For assistant code blocks, find the <code> tag. For user messages, use the raw text.
-    const codeBlock = contentDiv.querySelector('code');
-    const textToCopy = codeBlock ? codeBlock.innerText : contentDiv.dataset.rawText;
-
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        button.textContent = 'Copied!';
-        button.style.backgroundColor = '#28a745'; // Green color for success
-        setTimeout(() => {
-            button.textContent = 'Copy';
-            button.style.backgroundColor = ''; // Revert to original color
-        }, 2000);
-    }).catch(err => { 
-        console.error('Failed to copy text: ', err);
-    });
-}
-
-function handleClearChat() {
-    messages = [];
-    clearChatWindow();
-    currentConversationId = null;
-    checkWelcomeScreen(); // Show welcome screen
-    console.log('Chat history cleared.');
-}
-
-function handleStop() {
-    if (abortController) {
-        abortController.abort();
-        console.log('Abort button clicked. Cancelling stream...');
-    }
-}
-async function handleConversationClick(event) {
-    const conversationItem = event.target.closest('.conversation-item');
-    if (!conversationItem) return;
-
-    const conversationId = parseInt(conversationItem.dataset.id, 10);
-    if (isNaN(conversationId)) return;
-
-    // If the same conversation is clicked, do nothing.
-    if (conversationId === currentConversationId) return;
-
-    try {
-        const conversation = await fetchConversationMessages(conversationId);
-        clearChatWindow();
-        messages = conversation.messages;
-        messages.forEach(msg => addMessage(msg.role, msg.content));
-        currentConversationId = conversation.id;
-        setActiveConversation(conversation.id);
-        checkWelcomeScreen();
-    } catch (error) {
-        console.error(`Failed to load conversation ${conversationId}:`, error);
-        alert(`Error: ${error.message}`);
-    }
-}
-
 
 function handleAgentSelection(event) {
     const target = event.target;
@@ -648,12 +475,8 @@ function initialize() {
     setMaxTokensValue(settings.max_tokens);
     updateMaxTokensDisplay(); // Also update the label
     setSystemPrompt(settings.system_prompt);
-
-    sendButton.addEventListener('click', handleSend);
+    initializeChat(); // Set up all chat-related event listeners
     agentSelect.addEventListener('change', (e) => handleAgentChange(e.target.value));
-    clearChatButton.addEventListener('click', handleClearChat);
-    conversationHistoryContainer.addEventListener('click', handleConversationClick);
-    stopButton.addEventListener('click', handleStop);
     settingsButton.addEventListener('click', () => toggleSettingsModal(true));
     themeToggleButton.addEventListener('click', toggleTheme);
     manageAgentsButton.addEventListener('click', () => {
@@ -700,24 +523,7 @@ function initialize() {
     temperatureSlider.addEventListener('input', updateTemperatureDisplay);
     maxTokensSlider.addEventListener('input', updateMaxTokensDisplay);
     // System prompt is now saved only when the "Save" button is clicked.
-
-    promptInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Prevent new line on Enter
-            handleSend();
-        }
-    });
-    promptInput.addEventListener('input', () => {
-        adjustTextareaHeight(promptInput);
-        if (!promptInput.disabled) {
-            sendButton.disabled = promptInput.value.trim() === '';
-        }
-    });
     
-    // Add a single event listener to the chat window for copy buttons
-    chatWindow.addEventListener('click', handleCopyClick);
-
-    checkWelcomeScreen(); // Initial check for the welcome screen
     // Add event listener for agent selection in the modal
     agentListContainer.addEventListener('click', handleAgentSelection);
 
@@ -753,7 +559,6 @@ function initialize() {
     imageCountSlider.addEventListener('input', () => document.getElementById('image-count-value').textContent = imageCountSlider.value);
 
     loadAgents();
-    loadConversations();
     // After loading agents, trigger the mode loading for the default selected agent
     if (agentSelect.value) {
         handleAgentChange(agentSelect.value);
