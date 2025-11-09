@@ -16,6 +16,9 @@
     <aside id="sidebar" class="expanded">
         <div class="sidebar-header">
             <h2>TinyAGI</h2>
+            <button id="sidebar-toggle" class="icon-button" title="Toggle Sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
             <div class="sidebar-controls">
                 <button id="new-chat-button" class="icon-button" title="New Chat">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H6v-2h12v2zm-4-3H6V7h8v2zm-4-3H6V4h4v2z"/></svg>
@@ -71,20 +74,24 @@
 
     <main id="main-content">
         <div id="chat-window">
-            <div id="welcome-screen">
-                <div class="welcome-logo">🚀</div>
-                <h1>Welcome to TinyAGI</h1>
-                <p>Select an agent from the sidebar to begin.</p>
+            <div id="chat-window-inner">
+                <div id="welcome-screen">
+                    <div class="welcome-logo">🚀</div>
+                    <h1>Welcome to TinyAGI</h1>
+                    <p>Select an agent from the sidebar to begin.</p>
+                </div>
             </div>
         </div>
         <div id="input-area">
-            <textarea id="prompt-input" placeholder="Enter your message..." rows="1"></textarea>
-            <button id="send-button" title="Send Message">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-            </button>
-            <button id="stop-button" title="Stop Generation" style="display: none;">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M6 6h12v12H6z"/></svg>
-            </button>
+            <div id="input-area-inner">
+                <textarea id="prompt-input" placeholder="Enter your message..." rows="1"></textarea>
+                <button id="send-button" title="Send Message">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+                <button id="stop-button" title="Stop Generation" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M6 6h12v12H6z"/></svg>
+                </button>
+            </div>
         </div>
     </main>
 </div>

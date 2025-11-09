@@ -10,6 +10,7 @@
     flex-direction: column;
     line-height: 1.6;
     width: fit-content; /* Ensure message bubble fits content */
+    animation: slideInUp 0.4s var(--ease-out);
 }
 
 .message .content {
@@ -123,7 +124,7 @@
     transition: opacity var(--transition-fast), background-color var(--transition-fast);
 }
 
-pre:hover .copy-button {
+pre:hover .copy-button,
 .message.user .content:hover .copy-button {
     opacity: 1;
 }

@@ -8,6 +8,7 @@ const agentModal = document.getElementById('agent-modal');
 const editAgentModal = document.getElementById('edit-agent-modal');
 const createAgentModal = document.getElementById('create-agent-modal');
 const imageStudioModal = document.getElementById('image-studio-modal');
+const ideStudioModal = document.getElementById('ide-studio-modal');
 const roboticsStudioModal = document.getElementById('robotics-studio-modal');
 const musicStudioModal = document.getElementById('music-studio-modal');
 const videoStudioModal = document.getElementById('video-studio-modal');
@@ -361,6 +362,16 @@ export function toggleCreateAgentModal(show) {
 export function toggleImageStudioModal(show) {
     if (imageStudioModal) {
         imageStudioModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Opens or closes the IDE studio modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleIDEStudioModal(show) {
+    if (ideStudioModal) {
+        ideStudioModal.style.display = show ? 'flex' : 'none';
     }
 }
 

@@ -1,0 +1,66 @@
+/*
+   ==========================================================================
+   IDE STUDIO
+   ==========================================================================
+*/
+
+.ide-studio-body {
+    flex-direction: row !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+    height: 100%;
+}
+
+.ide-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.ide-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ide-panel-header label {
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+.ide-panel-header select {
+    width: 150px;
+}
+
+.ide-panel-header .button-primary {
+    margin-left: auto;
+}
+
+#ide-prompt-input, #ide-output-code {
+    flex: 1;
+    width: 100%;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    resize: none;
+}
+
+#ide-prompt-input:focus {
+    outline: none;
+}
+
+#ide-output-code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
