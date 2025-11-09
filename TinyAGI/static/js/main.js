@@ -1,128 +1,204 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const agentSelect = document.getElementById('agent-select');
-    const chatWindow = document.getElementById('chat-window');
-    const promptInput = document.getElementById('prompt-input');
-    const sendButton = document.getElementById('send-button');
+import { fetchAgents, streamChat } from './api.js';
+import {
+    populateAgentSelector,
+    handleAgentError,
+    addMessage,
+    showThinkingIndicator,
+    updateAssistantMessage,
+    setFormDisabled,
+    clearChatWindow,
+    toggleStopButton,
+    toggleSettingsModal,
+    updateTemperatureDisplay,
+    setTemperatureValue,
+    updateMaxTokensDisplay,
+    setMaxTokensValue
+} from './ui.js';
 
-    let messages = [];
+const agentSelect = document.getElementById('agent-select');
+const chatWindow = document.getElementById('chat-window');
+const promptInput = document.getElementById('prompt-input');
+const sendButton = document.getElementById('send-button');
+const clearChatButton = document.getElementById('clear-chat-button');
+const stopButton = document.getElementById('stop-button');
+const settingsButton = document.getElementById('settings-button');
+const closeModalButton = document.getElementById('close-modal-button');
+const saveSettingsButton = document.getElementById('save-settings-button');
+const temperatureSlider = document.getElementById('temperature-slider');
+const maxTokensSlider = document.getElementById('max-tokens-slider');
+const systemPromptTextarea = document.getElementById('system-prompt');
 
-    // Fetch agents and populate the dropdown
-    async function loadAgents() {
-        try {
-            const response = await fetch('/api/agents');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const agents = await response.json();
-            
-            agentSelect.innerHTML = ''; // Clear loading text
-            agents.forEach(agentName => {
-                const option = document.createElement('option');
-                option.value = agentName;
-                option.textContent = agentName;
-                agentSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error("Could not load agents:", error);
-            agentSelect.innerHTML = '<option>Error loading agents</option>';
+const SETTINGS_KEY = 'tinyagi_settings';
+
+let messages = [];
+let abortController = null;
+let settings = {
+    temperature: 1.0,
+    max_tokens: 4096
+};
+
+
+
+async function loadAgents() {
+    try {
+        const agents = await fetchAgents();
+        populateAgentSelector(agents);
+    } catch (error) {
+        console.error("Could not load agents:", error);
+        handleAgentError();
+    }
+}
+
+async function handleSend() {
+    const prompt = promptInput.value.trim();
+    if (!prompt) return;
+
+    const selectedAgent = agentSelect.value;
+    if (!selectedAgent || selectedAgent === 'Error loading agents') {
+        alert('Please select a valid agent.');
+        return;
+    }
+
+    addMessage('user', prompt);
+    messages.push({ role: 'user', content: prompt });
+    promptInput.value = '';
+    setFormDisabled(true);
+    toggleStopButton(true);
+
+    const assistantContentDiv = showThinkingIndicator();
+    let assistantResponse = '';
+
+    abortController = new AbortController();
+
+    // Prepare messages for the API call, including the system prompt
+    const systemPrompt = systemPromptTextarea.value.trim();
+    const messagesToSend = [...messages];
+    if (systemPrompt) {
+        messagesToSend.unshift({ role: 'system', content: systemPrompt });
+    }
+
+    try {
+        const stream = await streamChat(selectedAgent, messagesToSend, settings, abortController.signal);
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            assistantResponse += chunk;
+            updateAssistantMessage(assistantContentDiv, assistantResponse);
         }
-    }
-
-    function addMessageToUI(role, content) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${role}`;
-        
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'content';
-        contentDiv.textContent = content;
-        
-        messageDiv.appendChild(contentDiv);
-        chatWindow.appendChild(messageDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll
-    }
-
-    function showThinkingIndicator() {
-        const thinkingDiv = document.createElement('div');
-        thinkingDiv.id = 'thinking-indicator';
-        thinkingDiv.className = 'message assistant';
-        thinkingDiv.innerHTML = `<div class="content thinking">Assistant is thinking...</div>`;
-        chatWindow.appendChild(thinkingDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    function removeThinkingIndicator() {
-        const indicator = document.getElementById('thinking-indicator');
-        if (indicator) indicator.remove();
-    }
-
-    async function handleSend() {
-        const prompt = promptInput.value.trim();
-        if (!prompt) return;
-
-        const selectedAgent = agentSelect.value;
-        if (!selectedAgent || selectedAgent === 'Error loading agents') {
-            alert('Please select a valid agent.');
-            return;
-        }
-
-        addMessageToUI('user', prompt);
-        messages.push({ role: 'user', content: prompt });
-        promptInput.value = '';
-        sendButton.disabled = true;
-        promptInput.disabled = true;
-
-        showThinkingIndicator();
-
-        try {
-            const response = await fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    agent: selectedAgent,
-                    messages: messages,
-                    stream: true
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-            }
-
-            removeThinkingIndicator();
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let assistantResponse = '';
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message assistant';
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'content';
-            messageDiv.appendChild(contentDiv);
-            chatWindow.appendChild(messageDiv);
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                assistantResponse += chunk;
-                contentDiv.textContent = assistantResponse; // Consider using a Markdown parser here for better rendering
-                chatWindow.scrollTop = chatWindow.scrollHeight;
-            }
-            messages.push({ role: 'assistant', content: assistantResponse });
-
-        } catch (error) {
-            removeThinkingIndicator();
+        messages.push({ role: 'assistant', content: assistantResponse });
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Stream generation stopped by user.');
+            updateAssistantMessage(assistantContentDiv, assistantResponse + ' [Stopped]');
+            messages.push({ role: 'assistant', content: assistantResponse + ' [Stopped]'});
+        } else {
             console.error('Error sending message:', error);
-            addMessageToUI('assistant', 'Sorry, an error occurred.');
+            updateAssistantMessage(assistantContentDiv, `Sorry, an error occurred: ${error.message}`);
+        }
+    } finally {
+        setFormDisabled(false);
+        toggleStopButton(false);
+        promptInput.focus();
+        abortController = null;
+    }
+}
+
+function handleClearChat() {
+    // Clear the in-memory message history
+    messages = [];
+    // Clear the messages from the UI
+    clearChatWindow();
+    // Add a welcome message or leave it blank
+    // addMessage('assistant', 'Chat cleared. How can I help you?');
+    console.log('Chat history cleared.');
+}
+
+function handleStop() {
+    if (abortController) {
+        abortController.abort();
+        console.log('Abort button clicked. Cancelling stream...');
+    }
+}
+
+function handleCopyClick(event) {
+    if (!event.target.classList.contains('copy-button')) return;
+
+    const button = event.target;
+    const pre = button.closest('pre');
+    if (!pre) return;
+
+    const code = pre.querySelector('code');
+    if (!code) return;
+
+    navigator.clipboard.writeText(code.innerText).then(() => {
+        button.textContent = 'Copied!';
+        button.style.backgroundColor = '#28a745'; // Green color for success
+        setTimeout(() => {
+            button.textContent = 'Copy';
+            button.style.backgroundColor = ''; // Revert to original color
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}
+
+function loadSettings() {
+    const savedSettings = localStorage.getItem(SETTINGS_KEY);
+    if (savedSettings) {
+        try {
+            const parsedSettings = JSON.parse(savedSettings);
+            // Merge with defaults to handle new settings added in future versions
+            settings = { ...settings, ...parsedSettings };
+            console.log('Loaded settings from localStorage:', settings);
+        } catch (e) {
+            console.error('Failed to parse settings from localStorage:', e);
         }
     }
+}
+
+function handleSaveSettings() {
+    settings.temperature = parseFloat(temperatureSlider.value);
+    settings.max_tokens = parseInt(maxTokensSlider.value, 10);
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        console.log('Settings saved to localStorage:', settings);
+    } catch (e) {
+        console.error('Failed to save settings to localStorage:', e);
+    }
+    toggleSettingsModal(false);
+}
+
+function initialize() {
+    loadSettings(); // Load settings on startup
 
     sendButton.addEventListener('click', handleSend);
+    clearChatButton.addEventListener('click', handleClearChat);
+    stopButton.addEventListener('click', handleStop);
+    settingsButton.addEventListener('click', () => toggleSettingsModal(true));
+    closeModalButton.addEventListener('click', () => toggleSettingsModal(false));
+    saveSettingsButton.addEventListener('click', handleSaveSettings);
+    temperatureSlider.addEventListener('input', updateTemperatureDisplay);
+
+    // Set initial values in the modal from loaded settings
+    setTemperatureValue(settings.temperature);
+    setMaxTokensValue(settings.max_tokens);
+
     promptInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleSend());
-    
     promptInput.addEventListener('input', () => {
-        sendButton.disabled = promptInput.value.trim() === '';
+        // Only enable send if not currently streaming a response
+        if (!promptInput.disabled) {
+            sendButton.disabled = promptInput.value.trim() === '';
+        }
     });
 
+    // Add a single event listener to the chat window for copy buttons
+    chatWindow.addEventListener('click', handleCopyClick);
+
     loadAgents();
-});
+}
+
+initialize();

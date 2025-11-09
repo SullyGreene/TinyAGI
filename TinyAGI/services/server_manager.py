@@ -83,6 +83,7 @@ def create_app():
         messages = data.get('messages')
         agent_name = data.get('agent')
         stream = data.get('stream', False)
+        settings = data.get('settings', {}) # Get settings, default to empty dict
 
         if not messages:
             return jsonify({'error': 'Messages are required'}), 400
@@ -96,17 +97,15 @@ def create_app():
             return jsonify({'error': f"Agent '{agent_name}' not found"}), 404
 
         try:
-            # The agent's chat method should handle the list of messages directly.
-            # We'll use the last user message content as the primary input for now.
-            # A more robust implementation would pass the whole message history.
-            last_user_message = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), '')
+            # Pass the entire conversation history to the agent's chat method.
+            # Also, unpack the settings dictionary as keyword arguments.
             if stream:
                 def generate():
-                    for chunk in agent.chat(last_user_message, stream=True):
+                    for chunk in agent.chat(messages, stream=True, **settings):
                         yield chunk
                 return Response(generate(), mimetype='text/plain')
             else:
-                generated_text = agent.chat(last_user_message)
+                generated_text = agent.chat(messages, **settings)
                 return jsonify({'response': generated_text})
         except Exception as e:
             logger.error(f"Error during chat: {e}")
