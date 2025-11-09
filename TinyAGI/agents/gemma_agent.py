@@ -78,16 +78,25 @@ class GemmaAgent(BaseAgent):
         self.model._history = history # Set the history on the model instance
         return self.generate_text(prompt, stream=stream, **kwargs)
 
-    def generate_text(self, prompt, stream=False, system_prompt=None):
+    def generate_text(self, prompt, stream=False, system_prompt=None, **kwargs):
         try:
             model = self.model
             if system_prompt:
                 model = genai.GenerativeModel(self.model_name, system_instruction=system_prompt)
 
+            # Merge agent's default parameters with runtime kwargs
+            generation_params = self.parameters.copy()
+            generation_params.update(kwargs)
+
+            # The Gemini API uses 'max_output_tokens', but a common name is 'max_tokens'.
+            # We'll map it for convenience.
+            if 'max_tokens' in generation_params:
+                generation_params['max_output_tokens'] = generation_params.pop('max_tokens')
+
             response = model.generate_content(
                 prompt,
                 stream=stream,
-                generation_config=genai.types.GenerationConfig(**self.parameters)
+                generation_config=genai.types.GenerationConfig(**generation_params)
             )
 
             if not response.parts:
