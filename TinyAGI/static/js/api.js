@@ -118,6 +118,23 @@ export async function startVideoGeneration(agent, prompt, settings) {
 }
 
 /**
+ * Sends an image and prompt to the robotics processing endpoint.
+ * @param {FormData} formData - The form data containing the image, prompt, and agent.
+ * @returns {Promise<object>} A promise that resolves to the server's response.
+ */
+export async function processRoboticsImage(formData) {
+    const response = await fetch('/api/robotics/process', {
+        method: 'POST',
+        body: formData,
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+/**
  * Polls the status of a video generation operation.
  * @param {string} operationName - The name of the operation to poll.
  * @returns {Promise<object>} A promise that resolves to the operation's status.

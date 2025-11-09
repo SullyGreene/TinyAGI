@@ -104,6 +104,15 @@
       "config": {
         "model": "models/lyria-realtime-exp"
       }
+    },
+    {
+      "name": "robotics_agent",
+      "module": "robotics_agent",
+      "class": "RoboticsAgent",
+      "source": "local",
+      "config": {
+        "model": "gemini-robotics-er-1.5-preview"
+      }
     }
   ],
   "plugins": [

@@ -315,6 +315,42 @@ def create_app():
             logger.error(f"Error during image generation: {e}", exc_info=True)
             return jsonify({'error': str(e)}), 500
 
+    @app.route('/api/robotics/process', methods=['POST'])
+    def robotics_process():
+        """
+        Handle robotics-related image and prompt processing.
+        """
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        prompt = request.form.get('prompt')
+        agent_name = request.form.get('agent', 'robotics_agent')
+
+        if not prompt:
+            return jsonify({'error': 'Prompt is required'}), 400
+
+        agent = app.agent_system.agent_manager.get_agent(agent_name)
+        if not agent or not hasattr(agent, 'process_image_with_prompt'):
+            return jsonify({'error': f"Robotics agent '{agent_name}' not found or is invalid."}), 404
+
+        try:
+            image_bytes = file.read()
+            image_part = {
+                "mime_type": file.mimetype,
+                "data": image_bytes,
+            }
+
+            # The agent expects a Part object from the SDK
+            from google.generativeai import types
+            sdk_image_part = types.Part.from_dict(image_part)
+
+            result_text = agent.process_image_with_prompt(sdk_image_part, prompt)
+            return jsonify({'result': result_text})
+        except Exception as e:
+            logger.error(f"Error during robotics processing: {e}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
+
     @app.route('/api/generate-video', methods=['POST'])
     def start_video_generation():
         """

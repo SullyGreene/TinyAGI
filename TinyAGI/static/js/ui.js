@@ -8,6 +8,7 @@ const agentModal = document.getElementById('agent-modal');
 const editAgentModal = document.getElementById('edit-agent-modal');
 const createAgentModal = document.getElementById('create-agent-modal');
 const imageStudioModal = document.getElementById('image-studio-modal');
+const roboticsStudioModal = document.getElementById('robotics-studio-modal');
 const musicStudioModal = document.getElementById('music-studio-modal');
 const videoStudioModal = document.getElementById('video-studio-modal');
 const temperatureSlider = document.getElementById('temperature-slider');
@@ -324,6 +325,16 @@ export function toggleImageStudioModal(show) {
 }
 
 /**
+ * Opens or closes the robotics studio modal.
+ * @param {boolean} show - True to show the modal, false to hide it.
+ */
+export function toggleRoboticsStudioModal(show) {
+    if (roboticsStudioModal) {
+        roboticsStudioModal.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
  * Opens or closes the music studio modal.
  * @param {boolean} show - True to show the modal, false to hide it.
  */
@@ -434,6 +445,90 @@ export function displayVideoResult(container, videoUrl) {
         <source src="${videoUrl}" type="video/mp4">
         Your browser does not support the video tag.
     </video>`;
+}
+
+/**
+ * Populates the robotics agent selection dropdown.
+ * @param {string[]} agentNames - An array of robotics-capable agent names.
+ */
+export function populateRoboticsAgentSelector(agentNames) {
+    const roboticsAgentSelect = document.getElementById('robotics-agent-select');
+    if (!roboticsAgentSelect) return;
+
+    roboticsAgentSelect.innerHTML = '';
+    if (agentNames.length === 0) {
+        roboticsAgentSelect.innerHTML = '<option>No robotics agents found</option>';
+        roboticsAgentSelect.disabled = true;
+    } else {
+        agentNames.forEach(agentName => {
+            const option = document.createElement('option');
+            option.value = agentName;
+            option.textContent = agentName;
+            roboticsAgentSelect.appendChild(option);
+        });
+        roboticsAgentSelect.disabled = false;
+    }
+}
+
+/**
+ * Displays a spinner in the robotics results panel.
+ * @param {HTMLElement} panel - The panel to display the spinner in.
+ */
+export function showRoboticsSpinner(panel) {
+    panel.innerHTML = `<div class="typing-indicator" style="margin: auto;"><span></span><span></span><span></span></div>`;
+}
+
+/**
+ * Displays the robotics processing result.
+ * @param {HTMLElement} panel - The panel to display the result in.
+ * @param {File} imageFile - The uploaded image file.
+ * @param {string} resultJsonString - The JSON string result from the agent.
+ */
+export function displayRoboticsResult(panel, imageFile, resultJsonString) {
+    panel.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const rawJsonPre = document.createElement('pre');
+    rawJsonPre.style.gridColumn = '1 / -1'; // Span full width
+    rawJsonPre.style.whiteSpace = 'pre-wrap';
+    rawJsonPre.style.wordBreak = 'break-all';
+
+    const img = new Image();
+    img.onload = () => {
+        // Set canvas size to image size
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.style.maxWidth = '100%';
+        canvas.style.height = 'auto';
+        ctx.drawImage(img, 0, 0);
+
+        try {
+            const results = JSON.parse(resultJsonString);
+            rawJsonPre.textContent = JSON.stringify(results, null, 2);
+
+            results.forEach(item => {
+                if (item.point) {
+                    const [y, x] = item.point;
+                    const canvasX = (x / 1000) * canvas.width;
+                    const canvasY = (y / 1000) * canvas.height;
+
+                    // Draw a circle
+                    ctx.beginPath();
+                    ctx.arc(canvasX, canvasY, 10, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#fff';
+                    ctx.stroke();
+                }
+            });
+        } catch (e) {
+            rawJsonPre.textContent = `Error parsing JSON: ${e.message}\n\nRaw output:\n${resultJsonString}`;
+        }
+        panel.appendChild(canvas);
+        panel.appendChild(rawJsonPre);
+    };
+    img.src = URL.createObjectURL(imageFile);
 }
 
 /**

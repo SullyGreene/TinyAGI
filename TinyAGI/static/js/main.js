@@ -1,5 +1,5 @@
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages, startVideoGeneration, pollVideoOperation } from './api.js';
+import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent, generateImages, startVideoGeneration, pollVideoOperation, processRoboticsImage } from './api.js';
 import {
     populateModeSelector,
     populateAgentSelector,
@@ -14,6 +14,7 @@ import {
     toggleSettingsModal,
     toggleEditAgentModal,
     toggleCreateAgentModal,
+    toggleRoboticsStudioModal,
     toggleMusicStudioModal,
     toggleVideoStudioModal,
     toggleImageStudioModal,
@@ -27,6 +28,9 @@ import {
     populateImageAgentSelector,
     displayGeneratedImages,
     populateVideoAgentSelector,
+    populateRoboticsAgentSelector,
+    displayRoboticsResult,
+    showRoboticsSpinner,
     updateMusicStatus,
     displayVideoResult,
     showVideoGenerationSpinner,
@@ -52,6 +56,7 @@ const closeAgentModalButton = document.querySelector('#agent-modal .close-button
 const closeModalButton = document.querySelector('.modal .close-button');
 const closeCreateAgentModalButton = document.querySelector('#create-agent-modal .close-button');
 const closeImageStudioModalButton = document.querySelector('#image-studio-modal .close-button');
+const closeRoboticsStudioModalButton = document.querySelector('#robotics-studio-modal .close-button');
 const closeMusicStudioModalButton = document.querySelector('#music-studio-modal .close-button');
 const closeVideoStudioModalButton = document.querySelector('#video-studio-modal .close-button');
 const saveAgentButton = document.getElementById('save-agent-button');
@@ -82,6 +87,12 @@ const stopMusicButton = document.getElementById('stop-music-button');
 const musicPromptInput = document.getElementById('music-prompt');
 const musicSteerPromptInput = document.getElementById('music-steer-prompt');
 const systemPromptTextarea = document.getElementById('system-prompt');
+
+const roboticsStudioButton = document.getElementById('robotics-studio-button');
+const processRoboticsImageButton = document.getElementById('process-robotics-image-button');
+const roboticsAgentSelect = document.getElementById('robotics-agent-select');
+const roboticsImageUpload = document.getElementById('robotics-image-upload');
+const roboticsPrompt = document.getElementById('robotics-prompt');
 
 const SETTINGS_KEY = 'tinyagi_chat_settings';
 
@@ -593,6 +604,11 @@ function initialize() {
         populateImageAgentSelector(imageAgents);
         toggleImageStudioModal(true);
     });
+    roboticsStudioButton.addEventListener('click', () => {
+        const roboticsAgents = agentsList.filter(name => name.includes('robotics'));
+        populateRoboticsAgentSelector(roboticsAgents);
+        toggleRoboticsStudioModal(true);
+    });
     musicStudioButton.addEventListener('click', () => {
         updateMusicStatus('Ready to generate music.');
         toggleMusicStudioModal(true);
@@ -634,6 +650,10 @@ function initialize() {
     // Video Studio Listeners
     generateVideoButton.addEventListener('click', handleGenerateVideo);
     closeVideoStudioModalButton.addEventListener('click', () => toggleVideoStudioModal(false));
+
+    // Robotics Studio Listeners
+    processRoboticsImageButton.addEventListener('click', handleProcessRoboticsImage);
+    closeRoboticsStudioModalButton.addEventListener('click', () => toggleRoboticsStudioModal(false));
 
     // Music Studio Listeners
     closeMusicStudioModalButton.addEventListener('click', () => {
