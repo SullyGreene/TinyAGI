@@ -149,16 +149,26 @@ export async function pollVideoOperation(operationName) {
  * Sends a chat request to the server and returns a readable stream for the response.
  * @param {string} agent - The name of the agent to chat with.
  * @param {object[]} messages - The history of messages.
+ * @param {object} message - The new user message object.
  * @param {object} settings - The generation settings (e.g., temperature).
  * @param {string} mode - The selected agent mode (e.g., 'chat', 'ide').
+ * @param {number|null} conversationId - The ID of the current conversation.
  * @param {AbortSignal} signal - The AbortSignal to cancel the request.
  * @returns {Promise<ReadableStream>} A promise that resolves to a ReadableStream of the response.
  */
-export async function streamChat(agent, messages, settings, mode, signal) {
+export async function streamChat(agent, messages, message, settings, mode, conversationId, signal) {
     const response = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent, messages, stream: true, settings, mode }),
+        body: JSON.stringify({ 
+            agent, 
+            messages, 
+            message,
+            stream: true, 
+            settings, 
+            mode,
+            conversation_id: conversationId
+        }),
         signal // Pass the signal to the fetch request
     });
 
@@ -167,4 +177,42 @@ export async function streamChat(agent, messages, settings, mode, signal) {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     return response.body;
+}
+
+/**
+ * Fetches all conversations from the server.
+ * @returns {Promise<object[]>} A promise that resolves to an array of conversation objects.
+ */
+export async function fetchConversations() {
+    const response = await fetch('/api/conversations');
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+/**
+ * Fetches all messages for a specific conversation.
+ * @param {number} conversationId - The ID of the conversation.
+ * @returns {Promise<object>} A promise that resolves to the conversation object with its messages.
+ */
+export async function fetchConversationMessages(conversationId) {
+    const response = await fetch(`/api/conversations/${conversationId}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+/**
+ * Deletes a conversation from the server.
+ * @param {number} conversationId - The ID of the conversation to delete.
+ * @returns {Promise<object>} A promise that resolves to the server's response message.
+ */
+export async function deleteConversation(conversationId) {
+    const response = await fetch(`/api/conversations/${conversationId}`, { method: 'DELETE' });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
 }

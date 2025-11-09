@@ -191,16 +191,40 @@ async function handleSend() {
     }
 
     try {
-        const stream = await streamChat(selectedAgent, messagesToSend, settings, selectedMode, abortController.signal);
+        const stream = await streamChat(selectedAgent, messagesForContext, userMessage, settings, selectedMode, currentConversationId, abortController.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            assistantResponse += chunk;
-            updateAssistantMessage(assistantContentDiv, marked.parse(assistantResponse));
+            
+            buffer += decoder.decode(value, { stream: true });
+
+            // If we haven't found the conversation ID yet, look for it.
+            if (currentConversationId === null) {
+                const idMatch = buffer.match(/^conversation_id:(\d+)\n/);
+                if (idMatch) {
+                    const newId = parseInt(idMatch[1], 10);
+                    if (!isNaN(newId)) {
+                        currentConversationId = newId;
+                        console.log(`Started new conversation: ${currentConversationId}`);
+                        // Remove the ID line from the buffer
+                        buffer = buffer.substring(idMatch[0].length);
+                        // Refresh the conversation list in the background
+                        loadConversations();
+                    }
+                }
+            }
+
+            // Update the UI with the content we have so far.
+            // This check ensures we don't render the conversation_id line.
+            if (buffer) {
+                assistantResponse += buffer;
+                updateAssistantMessage(assistantContentDiv, marked.parse(assistantResponse));
+                buffer = ''; // Clear buffer after rendering
+            }
         }
         messages.push({ role: 'assistant', content: assistantResponse });
     } catch (error) {
@@ -249,6 +273,7 @@ function handleCopyClick(event) {
 function handleClearChat() {
     messages = [];
     clearChatWindow();
+    currentConversationId = null;
     checkWelcomeScreen(); // Show welcome screen
     console.log('Chat history cleared.');
 }
@@ -259,6 +284,30 @@ function handleStop() {
         console.log('Abort button clicked. Cancelling stream...');
     }
 }
+async function handleConversationClick(event) {
+    const conversationItem = event.target.closest('.conversation-item');
+    if (!conversationItem) return;
+
+    const conversationId = parseInt(conversationItem.dataset.id, 10);
+    if (isNaN(conversationId)) return;
+
+    // If the same conversation is clicked, do nothing.
+    if (conversationId === currentConversationId) return;
+
+    try {
+        const conversation = await fetchConversationMessages(conversationId);
+        clearChatWindow();
+        messages = conversation.messages;
+        messages.forEach(msg => addMessage(msg.role, msg.content));
+        currentConversationId = conversation.id;
+        setActiveConversation(conversation.id);
+        checkWelcomeScreen();
+    } catch (error) {
+        console.error(`Failed to load conversation ${conversationId}:`, error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
 
 function handleAgentSelection(event) {
     const target = event.target;
@@ -602,6 +651,7 @@ function initialize() {
     sendButton.addEventListener('click', handleSend);
     agentSelect.addEventListener('change', (e) => handleAgentChange(e.target.value));
     clearChatButton.addEventListener('click', handleClearChat);
+    conversationHistoryContainer.addEventListener('click', handleConversationClick);
     stopButton.addEventListener('click', handleStop);
     settingsButton.addEventListener('click', () => toggleSettingsModal(true));
     themeToggleButton.addEventListener('click', toggleTheme);
@@ -702,6 +752,7 @@ function initialize() {
     imageCountSlider.addEventListener('input', () => document.getElementById('image-count-value').textContent = imageCountSlider.value);
 
     loadAgents();
+    loadConversations();
     // After loading agents, trigger the mode loading for the default selected agent
     if (agentSelect.value) {
         handleAgentChange(agentSelect.value);
