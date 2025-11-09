@@ -79,6 +79,25 @@
       }
     },
     {
+      "name": "openai_agent",
+      "module": "openai_agent",
+      "class": "OpenAIAgent",
+      "source": "local",
+      "config": {
+        "model": "gpt-5-nano"
+      },
+      "modes": {
+        "pirate": {
+          "name": "Pirate",
+          "system_prompt": "Talk like a pirate."
+        },
+        "haiku_writer": {
+          "name": "Haiku Writer",
+          "system_prompt": "You are a poet that only responds in haikus."
+        }
+      }
+    },
+    {
       "name": "imagen_agent",
       "module": "imagen_agent",
       "class": "ImagenAgent",

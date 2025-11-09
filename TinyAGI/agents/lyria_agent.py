@@ -22,8 +22,8 @@ class LyriaAgent(BaseAgent):
             logger.error("GEMINI_API_KEY not found in environment variables.")
             raise ValueError("GEMINI_API_KEY is required for LyriaAgent.")
         
-        # The Lyria model is experimental and may require a specific API version
-        self.client = genai.Client(http_options={'api_version': 'v1alpha'})
+        # Configure the library for all genai calls
+        genai.configure(api_key=api_key)
         self.model_name = self.model_config.get('model', 'models/lyria-realtime-exp')
         logger.info(f"LyriaAgent initialized with model: {self.model_name}")
 
@@ -34,7 +34,7 @@ class LyriaAgent(BaseAgent):
         """
         logger.info("Connecting to Lyria RealTime...")
         try:
-            async with self.client.aio.live.music.connect(model=self.model_name) as session:
+            async with genai.aiconnect(model=self.model_name) as session:
                 # Put the session object in the queue so the parent can control it
                 await output_queue.put(session)
 
