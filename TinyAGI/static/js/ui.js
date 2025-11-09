@@ -8,6 +8,7 @@ const temperatureSlider = document.getElementById('temperature-slider');
 const temperatureValue = document.getElementById('temperature-value');
 const maxTokensSlider = document.getElementById('max-tokens-slider');
 const maxTokensValue = document.getElementById('max-tokens-value');
+const systemPromptTextarea = document.getElementById('system-prompt');
 
 
 /**
@@ -186,4 +187,12 @@ export function setMaxTokensValue(value) {
         maxTokensSlider.value = value;
     }
     updateMaxTokensDisplay();
+}
+
+/**
+ * Sets the value of the system prompt textarea.
+ * @param {string} text - The text to set.
+ */
+export function setSystemPrompt(text) {
+    if (systemPromptTextarea) systemPromptTextarea.value = text;
 }

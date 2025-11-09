@@ -3,71 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TinyAGI</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 40px auto;
-            max-width: 800px;
-            line-height: 1.6;
-            font-size: 18px;
-            color: #333;
-            padding: 0 10px;
-        }
-        h1, h2, h3 {
-            line-height: 1.2;
-        }
-        textarea {
-            width: 100%;
-            font-size: 16px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        select {
-            width: 100%;
-            font-size: 16px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        input[type="submit"] {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .response {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-        }
-    </style>
+    <title>TinyAGI Web UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Source+Code+Pro&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>🧠 TinyAGI</h1>
-    <form action="/" method="post">
-        <label for="agent">Select Agent:</label>
-        <select name="agent" id="agent">
-            {% for agent_name in agents %}
-                <option value="{{ agent_name }}">{{ agent_name }}</option>
-            {% endfor %}
-        </select>
-        <br><br>
-        <label for="prompt">Enter Prompt:</label>
-        <textarea name="prompt" id="prompt" rows="5"></textarea>
-        <br><br>
-        <input type="submit" value="Generate">
-    </form>
-    {% if response %}
-        <div class="response">
-            <h2>Response:</h2>
-            <p>{{ response }}</p>
+
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h2>TinyAGI</h2>
+            <div class="sidebar-controls">
+                <button id="new-chat-button" class="icon-button" title="New Chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+                </button>
+                <button id="settings-button" class="icon-button" title="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.44,0.17-0.48,0.41L9.2,5.7c-0.59,0.24-1.13,0.56-1.62,0.94L5.19,5.68c-0.22-0.08-0.47,0-0.59,0.22L2.68,9.22 c-0.11,0.2-0.06,0.47,0.12,0.61l2.03,1.58C4.77,11.69,4.75,12,4.75,12.31c0,0.31,0.02,0.62,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.04,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.48-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.11-0.2,0.06-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                </button>
+            </div>
         </div>
-    {% endif %}
+        <div class="sidebar-section">
+            <label for="agent-select">Select Agent:</label>
+            <select id="agent-select">
+                <option>Loading...</option>
+            </select>
+        </div>
+        <!-- Future sidebar content can go here -->
+    </aside>
+
+    <main id="main-content">
+        <div id="chat-window">
+            <!-- Chat messages will be appended here -->
+        </div>
+        <div id="input-area">
+            <textarea id="prompt-input" placeholder="Enter your message..." rows="1"></textarea>
+            <button id="send-button" title="Send Message">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+            <button id="stop-button" title="Stop Generation" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M6 6h12v12H6z"/></svg>
+            </button>
+        </div>
+    </main>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting">
+                    <label for="temperature-slider">Temperature: <span id="temperature-value">1.0</span></label>
+                    <input type="range" id="temperature-slider" min="0" max="2" step="0.1" value="1.0">
+                </div>
+                <div class="setting">
+                    <label for="max-tokens-slider">Max Tokens: <span id="max-tokens-value">2048</span></label>
+                    <input type="range" id="max-tokens-slider" min="256" max="8192" step="256" value="2048">
+                </div>
+                <div class="setting">
+                    <label for="system-prompt">System Prompt</label>
+                    <textarea id="system-prompt" rows="6" placeholder="You are a helpful assistant."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings-button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/ui.js') }}"></script>
 </body>
 </html>
+

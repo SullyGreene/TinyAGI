@@ -12,7 +12,8 @@ import {
     updateTemperatureDisplay,
     setTemperatureValue,
     updateMaxTokensDisplay,
-    setMaxTokensValue
+    setMaxTokensValue,
+    setSystemPrompt
 } from './ui.js';
 
 const agentSelect = document.getElementById('agent-select');
@@ -34,7 +35,8 @@ let messages = [];
 let abortController = null;
 let settings = {
     temperature: 1.0,
-    max_tokens: 4096
+    max_tokens: 4096,
+    system_prompt: ''
 };
 
 
@@ -160,20 +162,30 @@ function loadSettings() {
     }
 }
 
-function handleSaveSettings() {
-    settings.temperature = parseFloat(temperatureSlider.value);
-    settings.max_tokens = parseInt(maxTokensSlider.value, 10);
+function saveSettings() {
     try {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
         console.log('Settings saved to localStorage:', settings);
     } catch (e) {
         console.error('Failed to save settings to localStorage:', e);
     }
+}
+
+function handleSaveSettings() {
+    settings.temperature = parseFloat(temperatureSlider.value);
+    settings.max_tokens = parseInt(maxTokensSlider.value, 10);
+    // System prompt is saved on input, but we could re-save all here if needed.
+    saveSettings();
     toggleSettingsModal(false);
 }
 
 function initialize() {
     loadSettings(); // Load settings on startup
+
+    // Set initial values in the UI from loaded settings
+    setTemperatureValue(settings.temperature);
+    setMaxTokensValue(settings.max_tokens);
+    setSystemPrompt(settings.system_prompt);
 
     sendButton.addEventListener('click', handleSend);
     clearChatButton.addEventListener('click', handleClearChat);
@@ -182,10 +194,11 @@ function initialize() {
     closeModalButton.addEventListener('click', () => toggleSettingsModal(false));
     saveSettingsButton.addEventListener('click', handleSaveSettings);
     temperatureSlider.addEventListener('input', updateTemperatureDisplay);
-
-    // Set initial values in the modal from loaded settings
-    setTemperatureValue(settings.temperature);
-    setMaxTokensValue(settings.max_tokens);
+    maxTokensSlider.addEventListener('input', updateMaxTokensDisplay);
+    systemPromptTextarea.addEventListener('input', () => {
+        settings.system_prompt = systemPromptTextarea.value;
+        saveSettings();
+    });
 
     promptInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleSend());
     promptInput.addEventListener('input', () => {
