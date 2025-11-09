@@ -36,9 +36,9 @@ class AgentSystem:
             raise ValueError("Configuration validation failed. Please check your config file(s).")
 
         self.module_manager = ModuleManager(self.config.get('modules', []))
-        self.agent_manager = AgentManager(self.config.get('agents', []), self.module_manager, self.base_path)
-        self.plugin_manager = PluginManager(self.config.get('plugins', []))
-        self.tool_manager = ToolManager(self.config.get('tools', []))
+        self.agent_manager = AgentManager(self.config.get('agents', []), self.module_manager, base_path=self.base_path)
+        self.plugin_manager = PluginManager(self.config.get('plugins', []), base_path=self.base_path)
+        self.tool_manager = ToolManager(self.config.get('tools', []), base_path=self.base_path)
         self.task_manager = TaskManager(
             self.agent_manager,
             self.plugin_manager,
