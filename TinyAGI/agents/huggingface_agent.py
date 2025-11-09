@@ -4,9 +4,9 @@ from .base_agent import BaseAgent
 from transformers import pipeline
 
 class HuggingFaceAgent(BaseAgent):
-    def __init__(self, name: str, description: str, model_name: str = "distilgpt2"):
-        super().__init__(name, description)
-        self.model_name = model_name
+    def __init__(self, model_config, module_manager=None):
+        super().__init__(model_config)
+        self.model_name = self.model_config.get('model_name', 'distilgpt2')
         self.generator = pipeline("text-generation", model=self.model_name)
 
     def generate_text(self, prompt: str, **kwargs) -> str:
