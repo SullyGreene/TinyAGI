@@ -67,6 +67,27 @@ export function populateAgentSelector(agentNames) {
 }
 
 /**
+ * Populates the mode selection dropdown based on the selected agent's capabilities.
+ * @param {object} modes - An object where keys are mode IDs and values are mode details.
+ */
+export function populateModeSelector(modes) {
+    const modeSelect = document.getElementById('mode-select');
+    modeSelect.innerHTML = '<option value="">Default</option>'; // Reset with default
+
+    if (modes && Object.keys(modes).length > 0) {
+        for (const modeId in modes) {
+            const option = document.createElement('option');
+            option.value = modeId;
+            option.textContent = modes[modeId].name || modeId; // Use name if available, else ID
+            modeSelect.appendChild(option);
+        }
+        modeSelect.disabled = false;
+    } else {
+        modeSelect.disabled = true;
+    }
+}
+
+/**
  * Populates the agent management list.
  * @param {string[]} agentNames - An array of agent names.
  * @param {string} activeAgentName - The name of the currently selected agent.

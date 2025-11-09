@@ -74,18 +74,30 @@ class GemmaAgent(BaseAgent):
         """
         Handles a chat conversation with history.
         """
-        prompt, history = self._format_chat_history(messages)
+        mode = kwargs.pop('mode', None)
+        prompt, history = self._format_chat_history(messages) 
         self.model._history = history # Set the history on the model instance
-        return self.generate_text(prompt, stream=stream, **kwargs)
+        return self.generate_text(prompt, stream=stream, mode=mode, **kwargs)
 
     def generate_text(self, prompt, stream=False, system_prompt=None, **kwargs):
         try:
-            model = self.model
-            if system_prompt:
-                model = genai.GenerativeModel(self.model_name, system_instruction=system_prompt)
+            mode = kwargs.pop('mode', None)
+            mode_config = self.model_config.get('modes', {}).get(mode, {})
 
-            # Merge agent's default parameters with runtime kwargs
+            # Mode's system prompt overrides the default
+            final_system_prompt = mode_config.get('system_prompt', system_prompt)
+
+            model = self.model
+            if final_system_prompt:
+                model = genai.GenerativeModel(self.model_name, system_instruction=final_system_prompt)
+
+            # Parameter precedence:
+            # 1. Agent's base parameters
+            # 2. Mode-specific parameters
+            # 3. Runtime parameters from UI (kwargs)
             generation_params = self.parameters.copy()
+            if 'parameters' in mode_config:
+                generation_params.update(mode_config.get('parameters', {}))
             generation_params.update(kwargs)
 
             # The Gemini API uses 'max_output_tokens', but a common name is 'max_tokens'.

@@ -12,67 +12,99 @@ from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
-
 class GeminiAgent(BaseAgent):
     def __init__(self, model_config, module_manager=None):
         super().__init__(model_config)
-        api_key = os.getenv('GEMINI_API_KEY', '')
+        api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
-            logger.error("Gemini API key not provided.")
-            raise ValueError("Gemini API key is required.")
+            logger.error("GEMINI_API_KEY not found in environment variables.")
+            raise ValueError("GEMINI_API_KEY is required for GeminiAgent.")
         genai.configure(api_key=api_key)
+
+        self.generation_model_name = self.model_config.get('generation_model', 'gemini-1.5-flash')
+        self.embedding_model_name = self.model_config.get('embedding_model', 'models/embedding-001')
+        self.generation_model = genai.GenerativeModel(self.generation_model_name)
         
-        # Set up the generation model
-        self.generation_model_name = self.model_config.get('generation_model', 'gemini-2.5-flash')
-        self.model_name = self.generation_model_name # For BaseAgent logging
-        self.model = genai.GenerativeModel(self.generation_model_name)
-        
-        # Set up the embedding model
-        self.embedding_model_name = self.model_config.get('embedding_model', 'gemini-embedding-001')
         logger.info(f"GeminiAgent initialized with generation model: {self.generation_model_name} and embedding model: {self.embedding_model_name}")
 
-    def generate_text(self, prompt, stream=False, system_prompt=None):
-        try:
-            # The new API prefers system_instruction to be part of the model initialization
-            # or passed in a specific structure.
-            model = self.model
-            if system_prompt:
-                model = genai.GenerativeModel(self.generation_model_name, system_instruction=system_prompt)
+    def _format_chat_history(self, messages):
+        """Formats a list of messages for the Gemini API."""
+        history = []
+        # The Gemini API expects roles 'user' and 'model'.
+        # We map 'assistant' to 'model'.
+        for message in messages:
+            role = message.get("role")
+            content = message.get("content")
+            if role and content:
+                mapped_role = "model" if role == "assistant" else role
+                history.append({"role": mapped_role, "parts": [content]})
+        
+        # The last message is the current prompt, so we separate it from the history.
+        if history and history[-1]["role"] == "user":
+            current_prompt = history.pop()["parts"][0]
+            return current_prompt, history
+        elif history and history[-1]["role"] == "model":
+             # This case is unusual, but we can handle it.
+             return "What is your response?", history
+        
+        return "Hello", [] # Default if messages is empty or malformed
 
-            response = model.generate_content(
+    def chat(self, messages, stream=False, **kwargs):
+        """Handles a chat conversation with history."""
+        mode = kwargs.pop('mode', None)
+        prompt, history = self._format_chat_history(messages)
+        
+        # The genai library's chat object is stateful. We can start a new one for each turn.
+        chat_session = self.generation_model.start_chat(history=history)
+        
+        # Pass through other kwargs to generate_text
+        return self.generate_text(prompt, stream=stream, mode=mode, chat_session=chat_session, **kwargs)
+
+    def generate_text(self, prompt, stream=False, system_prompt=None, chat_session=None, **kwargs):
+        """Generates text using the Gemini model."""
+        try:
+            mode = kwargs.pop('mode', None)
+            mode_config = self.model_config.get('modes', {}).get(mode, {})
+
+            final_system_prompt = mode_config.get('system_prompt', system_prompt)
+
+            model_instance = self.generation_model
+            if final_system_prompt:
+                model_instance = genai.GenerativeModel(
+                    self.generation_model_name,
+                    system_instruction=final_system_prompt
+                )
+
+            generation_params = self.parameters.copy()
+            if 'parameters' in mode_config:
+                generation_params.update(mode_config.get('parameters', {}))
+            generation_params.update(kwargs)
+
+            if 'max_tokens' in generation_params:
+                generation_params['max_output_tokens'] = generation_params.pop('max_tokens')
+
+            # Use the provided chat session if available, otherwise generate directly
+            target = chat_session if chat_session else model_instance
+            response = target.send_message(
                 prompt,
                 stream=stream,
-                generation_config=genai.types.GenerationConfig(
-                    candidate_count=self.parameters.get('candidate_count', 1),
-                    stop_sequences=self.parameters.get('stop_sequences', None),
-                    max_output_tokens=self.parameters.get('max_output_tokens', 2048),
-                    temperature=self.parameters.get('temperature', 0.7),
-                    top_p=self.parameters.get('top_p', None),
-                    top_k=self.parameters.get('top_k', None),
-                )
+                generation_config=genai.types.GenerationConfig(**generation_params)
             )
-            # Handle cases where the response is blocked by safety settings
-            if not response.parts:
-                block_reason = "Unknown"
-                safety_ratings = "Not available"
-                if hasattr(response, 'prompt_feedback'):
-                    block_reason = response.prompt_feedback.block_reason
-                    safety_ratings = response.prompt_feedback.safety_ratings
-                logger.warning(f"Gemini response was blocked. Reason: {block_reason}. Safety Ratings: {safety_ratings}")
-                return "Response was blocked due to safety settings." if not stream else iter(["Response was blocked due to safety settings."])
 
             if stream:
                 return (chunk.text for chunk in response)
             else:
                 return response.text
         except Exception as e:
-            logger.error(f"Error generating text with Gemini: {e}")
-            return None
+            logger.error(f"Error generating text with Gemini: {e}", exc_info=True)
+            return f"An error occurred: {e}"
 
     def embed(self, input_data):
+        """Generates embeddings for the given input data."""
         try:
             if isinstance(input_data, str):
                 input_data = [input_data]
+            
             result = genai.embed_content(
                 model=self.embedding_model_name,
                 content=input_data,
@@ -80,21 +112,5 @@ class GeminiAgent(BaseAgent):
             )
             return result['embedding']
         except Exception as e:
-            logger.error(f"Error generating embeddings with Gemini: {e}")
+            logger.error(f"Error generating embeddings with Gemini: {e}", exc_info=True)
             return []
-
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.

@@ -1,6 +1,7 @@
 import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
 import { fetchAgents, streamChat, deleteAgent, fetchAgentDetails, updateAgent, createAgent } from './api.js';
 import {
+    populateModeSelector,
     populateAgentSelector,
     handleAgentError,
     addMessage,
@@ -25,6 +26,7 @@ import {
 } from './ui.js';
 
 const agentSelect = document.getElementById('agent-select');
+const modeSelect = document.getElementById('mode-select');
 const chatWindow = document.getElementById('chat-window');
 const promptInput = document.getElementById('prompt-input'); // This is now a textarea
 const sendButton = document.getElementById('send-button');
@@ -78,6 +80,17 @@ async function loadAgents() {
     }
 }
 
+async function handleAgentChange(agentName) {
+    try {
+        const agentDetails = await fetchAgentDetails(agentName);
+        const modes = agentDetails.modes || {};
+        populateModeSelector(modes);
+    } catch (error) {
+        console.error(`Could not load modes for agent ${agentName}:`, error);
+        populateModeSelector({}); // Clear the modes dropdown on error
+    }
+}
+
 // --- Core Chat Logic ---
 
 async function handleSend() {
@@ -85,6 +98,7 @@ async function handleSend() {
     if (!prompt) return;
 
     const selectedAgent = agentSelect.value;
+    const selectedMode = modeSelect.value;
     if (!selectedAgent || selectedAgent === 'Error loading agents') {
         alert('Please select a valid agent.');
         return;
@@ -110,7 +124,7 @@ async function handleSend() {
     }
 
     try {
-        const stream = await streamChat(selectedAgent, messagesToSend, settings, abortController.signal);
+        const stream = await streamChat(selectedAgent, messagesToSend, settings, selectedMode, abortController.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
 
@@ -209,6 +223,9 @@ function handleAgentSelection(event) {
 
         // Close the modal
         toggleAgentModal(false);
+
+        // Trigger update of modes for the newly selected agent
+        handleAgentChange(agentName);
     }
 }
 
@@ -330,6 +347,7 @@ function initialize() {
     setSystemPrompt(settings.system_prompt);
 
     sendButton.addEventListener('click', handleSend);
+    agentSelect.addEventListener('change', (e) => handleAgentChange(e.target.value));
     clearChatButton.addEventListener('click', handleClearChat);
     stopButton.addEventListener('click', handleStop);
     settingsButton.addEventListener('click', () => toggleSettingsModal(true));
@@ -370,6 +388,10 @@ function initialize() {
     agentListContainer.addEventListener('click', handleAgentSelection);
 
     loadAgents();
+    // After loading agents, trigger the mode loading for the default selected agent
+    if (agentSelect.value) {
+        handleAgentChange(agentSelect.value);
+    }
 }
 
 initialize();

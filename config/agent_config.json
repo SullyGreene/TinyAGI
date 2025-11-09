@@ -7,6 +7,22 @@
       "source": "local",
       "config": {
         "model_card": "models/gemma-3n-e2b-it.json"
+      },
+      "modes": {
+        "chat": {
+          "name": "Chat",
+          "system_prompt": "You are a friendly and helpful chat assistant. Your responses should be conversational and informative.",
+          "parameters": { "temperature": 0.9 }
+        },
+        "ide": {
+          "name": "IDE Assistant",
+          "system_prompt": "You are an expert programmer integrated into an IDE. Provide concise, accurate code and explanations. Prioritize correctness and efficiency.",
+          "parameters": { "temperature": 0.2 }
+        },
+        "canva": {
+          "name": "Canva Assistant",
+          "system_prompt": "You are a creative design assistant specializing in Canva. Provide innovative design ideas, suggest templates, and help users with their creative projects on Canva."
+        }
       }
     },
     {
@@ -17,6 +33,17 @@
       "config": {
         "model_card": "models/gemma-2b-it.json",
         "host": "http://localhost:11434"
+      },
+      "modes": {
+        "python_coder": {
+          "name": "Python Coder",
+          "system_prompt": "You are an expert Python programmer. Only provide Python code, with minimal explanation, inside a single markdown code block.",
+          "parameters": { "temperature": 0.0 }
+        },
+        "json_expert": {
+          "name": "JSON Expert",
+          "system_prompt": "You are a machine that only outputs valid JSON. Do not include any text outside of the JSON structure."
+        }
       }
     },
     {
